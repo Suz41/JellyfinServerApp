@@ -19,6 +19,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import java.util.zip.ZipInputStream
+import android.system.Os
 
 class JellyfinService : Service() {
 
@@ -74,41 +75,109 @@ class JellyfinService : Service() {
                 logAndNotify("Initializing Jellyfin Server...")
 
                 val jellyfinHome = File(filesDir, "jellyfin")
-                jellyfinHome.mkdirs()
-
                 val markerFile = File(jellyfinHome, ".extracted_marker")
+
+                // Robust extraction: Extract to temp directory first, then atomically rename
                 if (!markerFile.exists()) {
                     logAndNotify("Extracting assets (first launch — please wait)...")
-                    extractAssets(jellyfinHome)
-                    markerFile.createNewFile()
-                    logAndNotify("Assets extracted successfully.")
+                    val tempDir = File(filesDir, "jellyfin_temp")
+                    if (tempDir.exists()) tempDir.deleteRecursively()
+                    tempDir.mkdirs()
+
+                    try {
+                        extractAssets(tempDir)
+                        if (jellyfinHome.exists()) jellyfinHome.deleteRecursively()
+                        if (tempDir.renameTo(jellyfinHome)) {
+                            markerFile.createNewFile()
+                            logAndNotify("Assets extracted successfully.")
+                        } else {
+                            throw Exception("Failed to rename temp directory to jellyfin home")
+                        }
+                    } catch (e: Exception) {
+                        logAndNotify("ERROR: Extraction failed: ${e.message}")
+                        if (tempDir.exists()) tempDir.deleteRecursively()
+                        isRunning = false
+                        return@Thread
+                    }
                 }
 
                 val nativeLibDir = applicationInfo.nativeLibraryDir
-                logAndNotify("Native lib dir: $nativeLibDir")
+                val dotnetRoot = File(filesDir, "dotnet")
+                val fxrDir = File(dotnetRoot, "host/fxr/9.0.16")
+                val sharedDir = File(dotnetRoot, "shared/Microsoft.NETCore.App/9.0.16")
 
-                // Log all extracted native libraries for debugging
-                val libFiles = File(nativeLibDir).listFiles()
-                if (libFiles != null) {
-                    logAndNotify("Found ${libFiles.size} native libs:")
-                    libFiles.forEach { logAndNotify("  ${it.name} (${it.length()} bytes)") }
-                } else {
-                    logAndNotify("WARNING: nativeLibDir is empty or missing!")
+                // Construct .NET runtime structure with symbolic links to nativeLibDir
+                logAndNotify("Setting up .NET 9 ARM64 runtime layout...")
+                try {
+                    if (dotnetRoot.exists()) dotnetRoot.deleteRecursively()
+                    fxrDir.mkdirs()
+                    sharedDir.mkdirs()
+
+                    val libFiles = File(nativeLibDir).listFiles()
+                    if (libFiles != null) {
+                        for (lib in libFiles) {
+                            if (lib.name.endsWith(".so")) {
+                                // Symlink hostfxr
+                                if (lib.name == "libhostfxr.so") {
+                                    val symlinkFile = File(fxrDir, "libhostfxr.so")
+                                    Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
+                                }
+                                // Symlink all libraries to shared framework directory
+                                val symlinkFile = File(sharedDir, lib.name)
+                                Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
+                            }
+                        }
+                    } else {
+                        logAndNotify("WARNING: No native libraries found in $nativeLibDir")
+                    }
+                } catch (e: Exception) {
+                    logAndNotify("ERROR: Failed to initialize .NET runtime layout: ${e.message}")
+                    isRunning = false
+                    return@Thread
                 }
 
+                // Verify file existence
                 val loaderPath = File(nativeLibDir, "libld.so").absolutePath
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
+                val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
+                val hostfxrPath = File(fxrDir, "libhostfxr.so")
+
+                logAndNotify("Verifying required files before launch:")
+                logAndNotify("  Loader exists: ${File(loaderPath).exists()}")
+                logAndNotify("  Apphost exists: ${File(jellyfinBin).exists()}")
+                logAndNotify("  Jellyfin DLL exists: ${jellyfinDll.exists()}")
+                logAndNotify("  hostfxr exists: ${hostfxrPath.exists()}")
 
                 if (!File(loaderPath).exists()) {
-                    logAndNotify("ERROR: libld.so not found at $loaderPath")
+                    logAndNotify("ERROR: libld.so loader not found at $loaderPath")
                     isRunning = false
                     return@Thread
                 }
                 if (!File(jellyfinBin).exists()) {
-                    logAndNotify("ERROR: libjellyfin.so not found at $jellyfinBin")
+                    logAndNotify("ERROR: libjellyfin.so apphost not found at $jellyfinBin")
                     isRunning = false
                     return@Thread
                 }
+                if (!jellyfinDll.exists()) {
+                    logAndNotify("ERROR: Jellyfin assembly not found at ${jellyfinDll.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
+                if (!hostfxrPath.exists()) {
+                    logAndNotify("ERROR: .NET 9 ARM64 runtime is missing.\nExpected libhostfxr.so at: ${hostfxrPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
+
+                // Log launch parameters
+                logAndNotify("Jellyfin root: ${jellyfinHome.absolutePath}")
+                logAndNotify("Jellyfin DLL: ${jellyfinDll.absolutePath}")
+                logAndNotify(".NET root: ${dotnetRoot.absolutePath}")
+                logAndNotify(".NET runtime version: 9.0.16")
+                logAndNotify("hostfxr path: ${hostfxrPath.absolutePath}")
+                logAndNotify("Native library path: $nativeLibDir")
+                logAndNotify("Working directory: ${jellyfinHome.absolutePath}")
+                logAndNotify("Architecture: arm64-v8a")
 
                 logAndNotify("Starting Jellyfin process...")
 
@@ -129,9 +198,13 @@ class JellyfinService : Service() {
                     "--webdir",    webDir.absolutePath
                 )
 
+                // Set working directory
+                processBuilder.directory(jellyfinHome)
+
                 val env = processBuilder.environment()
                 env.remove("LD_PRELOAD")
                 env["LD_LIBRARY_PATH"] = nativeLibDir
+                env["DOTNET_ROOT"] = dotnetRoot.absolutePath
                 env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
                 env["DOTNET_gcServer"] = "0"
                 env["DOTNET_System_GC_Server"] = "false"
