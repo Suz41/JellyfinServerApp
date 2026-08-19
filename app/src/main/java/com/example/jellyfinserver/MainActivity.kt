@@ -7,13 +7,12 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.text.format.Formatter
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -30,35 +29,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
     private var jellyfinService: JellyfinService? = null
     private var isBound = false
-    
+
     private val logLines = mutableStateListOf<String>()
     private var serverRunning by mutableStateOf(false)
-    private var ipAddress by mutableStateOf("127.0.0.1")
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
             val binder = service as JellyfinService.LocalBinder
             jellyfinService = binder.getService()
             isBound = true
-            
-            // Sync current server status and logs
             serverRunning = jellyfinService?.isRunning == true
-            logLines.clear()
-            jellyfinService?.getLogs()?.split("\n")?.forEach { line ->
-                if (line.isNotEmpty()) logLines.add(line)
+            val existing = jellyfinService?.getLogs() ?: ""
+            if (existing.isNotBlank()) {
+                logLines.clear()
+                existing.split("\n").filter { it.isNotEmpty() }.forEach { logLines.add(it) }
             }
-            
-            // Set real-time log listener
-            jellyfinService?.setLogListener { newLine ->
-                if (newLine.isNotEmpty()) {
-                    logLines.add(newLine)
-                }
+            jellyfinService?.setLogListener { line ->
+                if (line.isNotEmpty()) logLines.add(line)
                 serverRunning = jellyfinService?.isRunning == true
             }
         }
@@ -70,40 +62,30 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val requestPermissionLauncher = registerForActivityResult(
+    private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            startJellyfinService()
-        }
-    }
+    ) { startJellyfinService() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        
-        ipAddress = getWifiIpAddress(this)
-        
         setContent {
             JellyfinServerTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color(0xFF121212)
                 ) {
                     ServerControlScreen(
                         serverRunning = serverRunning,
-                        ipAddress = ipAddress,
                         logs = logLines,
                         onToggleServer = {
-                            if (serverRunning) {
-                                stopJellyfinService()
-                            } else {
-                                checkAndStartService()
-                            }
+                            if (serverRunning) stopJellyfinService()
+                            else checkAndStartService()
                         },
                         onOpenWebUi = {
-                            val url = "http://localhost:8096"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            startActivity(intent)
+                            startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:8096"))
+                            )
                         }
                     )
                 }
@@ -111,31 +93,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        // Bind to service to receive logs and status if running
-        Intent(this, JellyfinService::class.java).also { intent ->
-            bindService(intent, connection, Context.BIND_AUTO_CREATE)
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        if (isBound) {
-            jellyfinService?.setLogListener(null)
-            unbindService(connection)
-            isBound = false
-        }
-    }
-
     private fun checkAndStartService() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    this, Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 return
             }
         }
@@ -145,58 +109,56 @@ class MainActivity : ComponentActivity() {
     private fun startJellyfinService() {
         val intent = Intent(this, JellyfinService::class.java)
         ContextCompat.startForegroundService(this, intent)
-        // Bind to it
-        bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        if (!isBound) {
+            bindService(intent, connection, Context.BIND_AUTO_CREATE)
+        }
     }
 
     private fun stopJellyfinService() {
-        val intent = Intent(this, JellyfinService::class.java).apply {
-            action = "STOP"
-        }
+        val intent = Intent(this, JellyfinService::class.java).apply { action = "STOP" }
         startService(intent)
         serverRunning = false
+        if (isBound) {
+            jellyfinService?.setLogListener(null)
+            unbindService(connection)
+            isBound = false
+        }
     }
 
-    private fun getWifiIpAddress(context: Context): String {
-        return try {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            @Suppress("DEPRECATION")
-            val ip = wifiManager.connectionInfo.ipAddress
-            if (ip == 0) "127.0.0.1" else Formatter.formatIpAddress(ip)
-        } catch (e: Exception) {
-            "127.0.0.1"
+    override fun onDestroy() {
+        if (isBound) {
+            jellyfinService?.setLogListener(null)
+            unbindService(connection)
+            isBound = false
         }
+        super.onDestroy()
     }
 }
 
 @Composable
 fun ServerControlScreen(
     serverRunning: Boolean,
-    ipAddress: String,
     logs: List<String>,
     onToggleServer: () -> Unit,
     onOpenWebUi: () -> Unit
 ) {
     val listState = rememberLazyListState()
-    
-    // Auto-scroll logs to bottom
     LaunchedEffect(logs.size) {
-        if (logs.isNotEmpty()) {
-            listState.animateScrollToItem(logs.size - 1)
-        }
+        if (logs.isNotEmpty()) listState.animateScrollToItem(logs.size - 1)
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "🍒 Jellyfin Media Server",
-            fontSize = 24.sp,
+            text = "🍒 Jellyfin Server",
+            fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFDE3163), // Cherry Red
+            color = Color(0xFFDE3163),
             modifier = Modifier.padding(vertical = 12.dp)
         )
 
@@ -205,31 +167,21 @@ fun ServerControlScreen(
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Server Status:", fontWeight = FontWeight.SemiBold)
-                    Text(
-                        text = if (serverRunning) "RUNNING 🟢" else "STOPPED 🔴",
-                        color = if (serverRunning) Color.Green else Color.Red,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Local Web UI:", fontWeight = FontWeight.SemiBold)
-                    Text(text = "http://$ipAddress:8096", color = Color(0xFFDE3163))
-                }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Status:", fontWeight = FontWeight.SemiBold, color = Color.White)
+                Text(
+                    text = if (serverRunning) "RUNNING 🟢" else "STOPPED 🔴",
+                    color = if (serverRunning) Color.Green else Color.Red,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -242,34 +194,30 @@ fun ServerControlScreen(
             Button(
                 onClick = onToggleServer,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (serverRunning) Color.Red else Color(0xFFDE3163)
+                    containerColor = if (serverRunning) Color(0xFFB71C1C) else Color(0xFFDE3163)
                 )
             ) {
-                Text(text = if (serverRunning) "Stop Server" else "Start Server")
+                Text(if (serverRunning) "Stop Server" else "Start Server")
             }
-
             Button(
                 onClick = onOpenWebUi,
                 enabled = serverRunning,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.DarkGray
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333))
             ) {
-                Text(text = "Open Web UI")
+                Text("Open Web UI")
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Server Logs",
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.align(Alignment.Start)
+            color = Color.Gray,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(bottom = 4.dp)
         )
-        
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        // Log Viewer console
+
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -277,16 +225,14 @@ fun ServerControlScreen(
                 .background(Color.Black, shape = RoundedCornerShape(8.dp))
                 .padding(8.dp)
         ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize()
-            ) {
+            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 items(logs.size) { index ->
                     Text(
                         text = logs[index],
-                        color = Color.LightGray,
+                        color = Color(0xFFCCCCCC),
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 11.sp
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
                     )
                 }
             }
@@ -294,7 +240,6 @@ fun ServerControlScreen(
     }
 }
 
-// Light and Dark theme helpers
 @Composable
 fun JellyfinServerTheme(content: @Composable () -> Unit) {
     MaterialTheme(
@@ -302,7 +247,9 @@ fun JellyfinServerTheme(content: @Composable () -> Unit) {
             primary = Color(0xFFDE3163),
             background = Color(0xFF121212),
             surface = Color(0xFF1E1E1E),
-            onPrimary = Color.White
+            onPrimary = Color.White,
+            onBackground = Color.White,
+            onSurface = Color.White
         ),
         content = content
     )

@@ -9,7 +9,9 @@ import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.io.BufferedReader
@@ -24,7 +26,8 @@ class JellyfinService : Service() {
     private var jellyfinProcess: Process? = null
     private val logBuffer = StringBuilder()
     private var logListener: ((String) -> Unit)? = null
-    
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     var isRunning = false
         private set
 
@@ -48,7 +51,6 @@ class JellyfinService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-
         startForeground(NOTIFICATION_ID, createNotification())
         startServer()
         return START_STICKY
@@ -56,29 +58,27 @@ class JellyfinService : Service() {
 
     fun setLogListener(listener: ((String) -> Unit)?) {
         this.logListener = listener
-        listener?.invoke(logBuffer.toString())
+        if (listener != null) {
+            val current = synchronized(logBuffer) { logBuffer.toString() }
+            listener.invoke(current)
+        }
     }
 
-    fun getLogs(): String = logBuffer.toString()
+    fun getLogs(): String = synchronized(logBuffer) { logBuffer.toString() }
 
     private fun startServer() {
         if (isRunning) return
-        
         Thread {
             try {
                 isRunning = true
                 logAndNotify("Initializing Jellyfin Server...")
 
-                val filesDir = filesDir.absolutePath
                 val jellyfinHome = File(filesDir, "jellyfin")
-                if (!jellyfinHome.exists()) {
-                    jellyfinHome.mkdirs()
-                }
+                jellyfinHome.mkdirs()
 
-                // Extract assets if needed
                 val markerFile = File(jellyfinHome, ".extracted_marker")
                 if (!markerFile.exists()) {
-                    logAndNotify("Extracting assets (this may take a minute)...")
+                    logAndNotify("Extracting assets (first launch — please wait)...")
                     extractAssets(jellyfinHome)
                     markerFile.createNewFile()
                     logAndNotify("Assets extracted successfully.")
@@ -88,20 +88,25 @@ class JellyfinService : Service() {
                 val loaderPath = File(nativeLibDir, "libld.so").absolutePath
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
 
-                logAndNotify("Starting process via Glibc loader...")
-                
+                logAndNotify("Starting Jellyfin process...")
+
+                val dataDir   = File(jellyfinHome, "data").also { it.mkdirs() }
+                val configDir = File(jellyfinHome, "config").also { it.mkdirs() }
+                val cacheDir  = File(jellyfinHome, "cache").also { it.mkdirs() }
+                val logDir    = File(jellyfinHome, "log").also { it.mkdirs() }
+                val webDir    = File(jellyfinHome, "jellyfin-web")
+
                 val processBuilder = ProcessBuilder(
                     loaderPath,
                     jellyfinBin,
                     "--nonetchange",
-                    "--datadir", File(jellyfinHome, "data").absolutePath,
-                    "--configdir", File(jellyfinHome, "config").absolutePath,
-                    "--cachedir", File(jellyfinHome, "cache").absolutePath,
-                    "--logdir", File(jellyfinHome, "log").absolutePath,
-                    "--webdir", File(jellyfinHome, "jellyfin-web").absolutePath
+                    "--datadir",   dataDir.absolutePath,
+                    "--configdir", configDir.absolutePath,
+                    "--cachedir",  cacheDir.absolutePath,
+                    "--logdir",    logDir.absolutePath,
+                    "--webdir",    webDir.absolutePath
                 )
 
-                // Configure environments
                 val env = processBuilder.environment()
                 env.remove("LD_PRELOAD")
                 env["LD_LIBRARY_PATH"] = nativeLibDir
@@ -109,14 +114,12 @@ class JellyfinService : Service() {
                 env["DOTNET_gcServer"] = "0"
                 env["DOTNET_System_GC_Server"] = "false"
                 env["DOTNET_GCHeapHardLimit"] = "200000000"
-
-                // Redirect stderr to stdout
                 processBuilder.redirectErrorStream(true)
 
                 val process = processBuilder.start()
                 jellyfinProcess = process
 
-                logAndNotify("Jellyfin process started.")
+                logAndNotify("Jellyfin process started. Access at http://127.0.0.1:8096")
 
                 val reader = BufferedReader(InputStreamReader(process.inputStream))
                 var line: String?
@@ -125,10 +128,10 @@ class JellyfinService : Service() {
                 }
 
                 val exitCode = process.waitFor()
-                logAndNotify("Jellyfin process exited with code $exitCode")
+                logAndNotify("Jellyfin exited with code $exitCode")
             } catch (e: Exception) {
-                logAndNotify("Error running Jellyfin: ${e.message}")
-                e.printStackTrace()
+                logAndNotify("Error: ${e.message}")
+                Log.e("JellyfinService", "Server error", e)
             } finally {
                 isRunning = false
                 jellyfinProcess = null
@@ -145,22 +148,21 @@ class JellyfinService : Service() {
     }
 
     private fun extractAssets(destDir: File) {
-        val assetManager = assets
-        val zipInputStream = ZipInputStream(assetManager.open("jellyfin_assets.zip"))
+        val zipInputStream = ZipInputStream(assets.open("jellyfin_assets.zip"))
+        val buffer = ByteArray(8192)
         var entry = zipInputStream.nextEntry
-        val buffer = ByteArray(4096)
         while (entry != null) {
             val file = File(destDir, entry.name)
             if (entry.isDirectory) {
                 file.mkdirs()
             } else {
                 file.parentFile?.mkdirs()
-                val fos = FileOutputStream(file)
-                var len: Int
-                while (zipInputStream.read(buffer).also { len = it } > 0) {
-                    fos.write(buffer, 0, len)
+                FileOutputStream(file).use { fos ->
+                    var len: Int
+                    while (zipInputStream.read(buffer).also { len = it } > 0) {
+                        fos.write(buffer, 0, len)
+                    }
                 }
-                fos.close()
             }
             zipInputStream.closeEntry()
             entry = zipInputStream.nextEntry
@@ -171,13 +173,10 @@ class JellyfinService : Service() {
     private fun logAndNotify(message: String) {
         Log.d("JellyfinService", message)
         synchronized(logBuffer) {
-            if (logBuffer.length > 50000) {
-                // Truncate logs if they grow too large
-                logBuffer.delete(0, 10000)
-            }
+            if (logBuffer.length > 50000) logBuffer.delete(0, 10000)
             logBuffer.append(message).append("\n")
         }
-        mainExecutor.execute {
+        mainHandler.post {
             logListener?.invoke(message)
         }
     }
@@ -200,24 +199,23 @@ class JellyfinService : Service() {
     }
 
     private fun createNotification(): Notification {
-        val stopIntent = Intent(this, JellyfinService::class.java).apply {
-            action = "STOP"
-        }
-        val pendingStopIntent = PendingIntent.getService(
-            this, 0, stopIntent, PendingIntent.FLAG_IMMUTABLE
+        val stopIntent = Intent(this, JellyfinService::class.java).apply { action = "STOP" }
+        val pendingStop = PendingIntent.getService(
+            this, 0, stopIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
-
-        val mainIntent = Intent(this, MainActivity::class.java)
-        val pendingMainIntent = PendingIntent.getActivity(
-            this, 0, mainIntent, PendingIntent.FLAG_IMMUTABLE
+        val mainIntent = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Jellyfin Server")
-            .setContentText("Jellyfin media server is running...")
+            .setContentText("Media server is running on port 8096")
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentIntent(pendingMainIntent)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingStopIntent)
+            .setContentIntent(mainIntent)
+            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingStop)
+            .setOngoing(true)
             .build()
     }
 

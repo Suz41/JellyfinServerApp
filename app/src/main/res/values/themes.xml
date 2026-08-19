@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme - extends Material3 for Compose compatibility -->
+    <!-- Extends Material3 bridge theme — required for edge-to-edge on Android 15+ -->
     <style name="Theme.JellyfinServer" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">#FF121212</item>
-        <item name="android:statusBarColor">#FF121212</item>
-        <item name="android:navigationBarColor">#FF121212</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="android:enforceStatusBarContrast">false</item>
     </style>
 </resources>
