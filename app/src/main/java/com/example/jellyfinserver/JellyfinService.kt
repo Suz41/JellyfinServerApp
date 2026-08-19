@@ -18,8 +18,13 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.zip.ZipInputStream
 import android.system.Os
+import android.system.OsConstants
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class JellyfinService : Service() {
 
@@ -70,341 +75,524 @@ class JellyfinService : Service() {
     private fun startServer() {
         if (isRunning) return
         Thread {
-            try {
-                isRunning = true
-                logAndNotify("Initializing Jellyfin Server...")
+            synchronized(startupLock) {
+                try {
+                    logAndNotify("=== JELLYFIN STARTUP DIAGNOSTICS ===")
 
-                val jellyfinHome = File(filesDir, "jellyfin")
-                val markerFile = File(jellyfinHome, ".extracted_marker")
+                    // ── 1. Acquire Lock & Detect API & ABI ──
+                    val deviceAbi = Build.SUPPORTED_ABIS.firstOrNull() ?: "unknown"
+                    logAndNotify("Android API: ${Build.VERSION.SDK_INT}")
+                    logAndNotify("ABI: $deviceAbi")
 
-                // Robust extraction: Extract to temp directory first, then atomically rename
-                if (!markerFile.exists()) {
-                    logAndNotify("Extracting assets (first launch — please wait)...")
-                    val tempDir = File(filesDir, "jellyfin_temp")
-                    if (tempDir.exists()) tempDir.deleteRecursively()
-                    tempDir.mkdirs()
-
-                    try {
-                        extractAssets(tempDir)
-                        if (jellyfinHome.exists()) jellyfinHome.deleteRecursively()
-                        if (tempDir.renameTo(jellyfinHome)) {
-                            markerFile.createNewFile()
-                            logAndNotify("Assets extracted successfully.")
-                        } else {
-                            throw Exception("Failed to rename temp directory to jellyfin home")
-                        }
-                    } catch (e: Exception) {
-                        logAndNotify("ERROR: Extraction failed: ${e.message}")
-                        if (tempDir.exists()) tempDir.deleteRecursively()
+                    if (!deviceAbi.contains("arm64") && !deviceAbi.contains("aarch64")) {
+                        logAndNotify("FAILED STAGE: ABI Verification")
+                        logAndNotify("REASON: Unsupported device ABI $deviceAbi. Jellyfin requires arm64-v8a.")
                         isRunning = false
                         return@Thread
                     }
-                }
 
-                val nativeLibDir = applicationInfo.nativeLibraryDir
+                    // ── 2. Resolve Directory Paths ──
+                    val nativeLibDir = applicationInfo.nativeLibraryDir
+                    val jellyfinHome = File(filesDir, "jellyfin")
+                    val dataDir   = File(jellyfinHome, "data").also { it.mkdirs() }
+                    val configDir = File(jellyfinHome, "config").also { it.mkdirs() }
+                    val cacheDir  = File(jellyfinHome, "cache").also { it.mkdirs() }
+                    val logDir    = File(jellyfinHome, "log").also { it.mkdirs() }
+                    val webDir    = File(jellyfinHome, "jellyfin-web")
+                    val dotnetRoot = File(filesDir, "dotnet")
 
-                // .NET shared framework directory
-                val dotnetRoot = File(jellyfinHome, "dotnet")
-                val fxrDir = File(dotnetRoot, "host/fxr/9.0.16")
-                val sharedDir = File(dotnetRoot, "shared/Microsoft.NETCore.App/9.0.16")
-                fxrDir.mkdirs()
-                sharedDir.mkdirs()
+                    logAndNotify("Native library directory:\n  $nativeLibDir")
+                    logAndNotify("Jellyfin root:\n  ${jellyfinHome.absolutePath}")
+                    logAndNotify(".NET root:\n  ${dotnetRoot.absolutePath}")
 
-                // Construct .NET runtime structure with symbolic links to nativeLibDir
-                try {
-                    // Clean up old .so symlinks, versioned lib symlinks, and old binaries
-                    jellyfinHome.listFiles()?.forEach { file ->
-                        if (file.name.endsWith(".so") || file.name.contains(".so.") ||
-                            file.name == "ffmpeg" || file.name == "ffprobe" ||
-                            file.name == "ffmpeg.bin" || file.name == "ffprobe.bin") {
-                            file.delete()
+                    // ── 3. Clean migration step ──
+                    runCleanMigration(jellyfinHome, configDir)
+
+                    // Extract assets if missing
+                    val markerFile = File(jellyfinHome, ".extracted_marker")
+                    if (!markerFile.exists()) {
+                        logAndNotify("Extracting assets (first launch)...")
+                        val tempDir = File(filesDir, "jellyfin_temp")
+                        if (tempDir.exists()) tempDir.deleteRecursively()
+                        tempDir.mkdirs()
+
+                        try {
+                            extractAssets(tempDir)
+                            if (jellyfinHome.exists()) {
+                                tempDir.listFiles()?.forEach { file ->
+                                    if (file.name != "data" && file.name != "config") {
+                                        val target = File(jellyfinHome, file.name)
+                                        if (target.exists()) target.deleteRecursively()
+                                        file.renameTo(target)
+                                    }
+                                }
+                                tempDir.deleteRecursively()
+                            } else {
+                                tempDir.renameTo(jellyfinHome)
+                            }
+                            markerFile.createNewFile()
+                            logAndNotify("Assets extracted successfully.")
+                        } catch (e: Exception) {
+                            logAndNotify("FAILED STAGE: Assets Extraction")
+                            logAndNotify("REASON: ${e.message}")
+                            if (tempDir.exists()) tempDir.deleteRecursively()
+                            isRunning = false
+                            return@Thread
                         }
                     }
 
+                    // .NET framework directory setup
+                    val fxrDir = File(dotnetRoot, "host/fxr/9.0.16")
+                    val sharedDir = File(dotnetRoot, "shared/Microsoft.NETCore.App/9.0.16")
+                    fxrDir.mkdirs()
+                    sharedDir.mkdirs()
+
+                    // ── 4. Robust & Idempotent Symlink Management ──
+                    logAndNotify("--- Performing Safe Symlink Management ---")
                     val libFiles = File(nativeLibDir).listFiles()
-                    if (libFiles != null && libFiles.isNotEmpty()) {
+                    if (libFiles != null) {
                         for (lib in libFiles) {
                             if (lib.name == "libhostfxr.so") {
-                                val symlinkFile = File(fxrDir, "libhostfxr.so")
-                                Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
+                                safeCreateSymlink(lib, File(fxrDir, "libhostfxr.so"))
                             }
+                            safeCreateSymlink(lib, File(jellyfinHome, lib.name))
+                            safeCreateSymlink(lib, File(dotnetRoot, lib.name))
+                            safeCreateSymlink(lib, File(sharedDir, lib.name))
 
-                            // Skip libffmpeg.so / libffprobe.so — we now use jellyfin-ffmpeg from assets
-                            if (lib.name == "libffmpeg.so" || lib.name == "libffprobe.so") continue
-
-                            val symlinkAppFile = File(jellyfinHome, lib.name)
-                            Os.symlink(lib.absolutePath, symlinkAppFile.absolutePath)
-
-                            val symlinkRootFile = File(dotnetRoot, lib.name)
-                            Os.symlink(lib.absolutePath, symlinkRootFile.absolutePath)
-
-                            // Versioned OpenSSL symlinks for .NET
                             if (lib.name == "libssl.so") {
-                                Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.3").absolutePath)
-                                Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.1.1").absolutePath)
-                                Os.symlink(lib.absolutePath, File(dotnetRoot, "libssl.so.3").absolutePath)
-                                Os.symlink(lib.absolutePath, File(dotnetRoot, "libssl.so.1.1").absolutePath)
+                                safeCreateSymlink(lib, File(jellyfinHome, "libssl.so.3"))
+                                safeCreateSymlink(lib, File(dotnetRoot, "libssl.so.3"))
                             } else if (lib.name == "libcrypto.so") {
-                                Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.3").absolutePath)
-                                Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.1.1").absolutePath)
-                                Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.3").absolutePath)
-                                Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.1.1").absolutePath)
+                                safeCreateSymlink(lib, File(jellyfinHome, "libcrypto.so.3"))
+                                safeCreateSymlink(lib, File(dotnetRoot, "libcrypto.so.3"))
+                            } else if (lib.name == "libg_libc.so") {
+                                safeCreateSymlink(lib, File(jellyfinHome, "libc.so.6"))
+                                safeCreateSymlink(lib, File(jellyfinHome, "ld-linux-aarch64.so.1"))
+                            } else if (lib.name == "libg_m.so") {
+                                safeCreateSymlink(lib, File(jellyfinHome, "libm.so.6"))
+                            } else if (lib.name == "libg_dl.so") {
+                                safeCreateSymlink(lib, File(jellyfinHome, "libdl.so.2"))
+                            } else if (lib.name == "libg_pthread.so") {
+                                safeCreateSymlink(lib, File(jellyfinHome, "libpthread.so.0"))
                             }
-
-                            // Versioned glibc symlinks for jellyfin-ffmpeg:
-                            // jellyfin-ffmpeg is patched to use libg_*.so names, which are already
-                            // symlinked to jellyfinHome. But we also add standard versioned names
-                            // (libc.so.6 etc.) as symlinks pointing to the same libg_*.so files,
-                            // so that any uninstrumented dependency resolution also works.
-                            when (lib.name) {
-                                "libg_libc.so" -> {
-                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libc.so.6").absolutePath)
-                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "ld-linux-aarch64.so.1").absolutePath)
-                                }
-                                "libg_m.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libm.so.6").absolutePath)
-                                "libg_dl.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libdl.so.2").absolutePath)
-                                "libg_pthread.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libpthread.so.0").absolutePath)
-                            }
-
-                            // Symlink to shared framework directory
-                            val symlinkFile = File(sharedDir, lib.name)
-                            Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                         }
-                    } else {
-                        logAndNotify("WARNING: No native libraries found in $nativeLibDir")
                     }
-                } catch (e: Exception) {
-                    logAndNotify("ERROR: Failed to initialize .NET runtime layout: ${e.message}")
-                    isRunning = false
-                    return@Thread
-                }
 
-                // ── Extract and set up jellyfin-ffmpeg (glibc-linked, patched to use libg_*.so) ──
-                val loaderPath = File(nativeLibDir, "libld.so").absolutePath
-                val ffmpegBinPath = File(jellyfinHome, "ffmpeg.bin")
-                val ffprobeBinPath = File(jellyfinHome, "ffprobe.bin")
-                val ffmpegPath = File(jellyfinHome, "ffmpeg")      // wrapper script
-                val ffprobePath = File(jellyfinHome, "ffprobe")    // wrapper script
+                    // Extract binary components (ffmpeg.bin & ffprobe.bin) from assets
+                    val ffmpegBinPath = File(jellyfinHome, "ffmpeg.bin")
+                    val ffprobeBinPath = File(jellyfinHome, "ffprobe.bin")
 
-                try {
-                    // Extract ffmpeg.bin and ffprobe.bin from the assets zip if not already current
-                    for ((assetName, destFile) in listOf(
-                        "ffmpeg.bin" to ffmpegBinPath,
-                        "ffprobe.bin" to ffprobeBinPath
-                    )) {
-                        logAndNotify("Extracting $assetName from assets...")
-                        assets.open("jellyfin_assets.zip").use { assetStream ->
-                            val zis = java.util.zip.ZipInputStream(assetStream)
-                            var entry = zis.nextEntry
-                            while (entry != null) {
-                                if (entry.name == assetName) {
-                                    destFile.outputStream().use { out ->
-                                        zis.copyTo(out)
+                    for ((assetName, destFile) in listOf("ffmpeg.bin" to ffmpegBinPath, "ffprobe.bin" to ffprobeBinPath)) {
+                        if (!destFile.exists() || destFile.length() <= 0) {
+                            logAndNotify("Extracting $assetName...")
+                            assets.open("jellyfin_assets.zip").use { assetStream ->
+                                val zis = ZipInputStream(assetStream)
+                                var entry = zis.nextEntry
+                                while (entry != null) {
+                                    if (entry.name == assetName) {
+                                        destFile.outputStream().use { out -> zis.copyTo(out) }
+                                        destFile.setExecutable(true, false)
+                                        break
                                     }
-                                    destFile.setExecutable(true, false)
-                                    logAndNotify("  Extracted: ${destFile.absolutePath} (${destFile.length() / 1024 / 1024}MB)")
-                                    break
+                                    zis.closeEntry()
+                                    entry = zis.nextEntry
                                 }
-                                zis.closeEntry()
-                                entry = zis.nextEntry
+                                zis.close()
                             }
-                            zis.close()
                         }
                     }
 
-                    // Write wrapper shell scripts:
-                    // #!/system/bin/sh
-                    // exec /path/to/libld.so /path/to/ffmpeg.bin "$@"
-                    // This makes our glibc loader run the jellyfin-ffmpeg binary with our libg_*.so deps.
-                    for ((wrapperFile, binFile) in listOf(
-                        ffmpegPath to ffmpegBinPath,
-                        ffprobePath to ffprobeBinPath
-                    )) {
-                        wrapperFile.writeText(
-                            "#!/system/bin/sh\nexec $loaderPath ${binFile.absolutePath} \"\$@\"\n"
-                        )
-                        wrapperFile.setExecutable(true, false)
-                        logAndNotify("Wrapper: ${wrapperFile.name} -> $loaderPath ${binFile.absolutePath}")
+                    // ── 5. Native Component & FFmpeg/FFprobe Resolution ──
+                    val ffmpegPath = File(nativeLibDir, "libffmpeg.so")
+                    val ffprobePath = File(nativeLibDir, "libffprobe.so")
+                    val ldLibraryPath = "${jellyfinHome.absolutePath}:$nativeLibDir"
+
+                    logAndNotify("FFmpeg path:\n  ${ffmpegPath.absolutePath}")
+                    logAndNotify("FFprobe path:\n  ${ffprobePath.absolutePath}")
+
+                    // Validate FFmpeg
+                    val ffmpegVersion = testNativeBinary("FFmpeg", ffmpegPath, ffmpegBinPath, ldLibraryPath)
+                    if (ffmpegVersion == null) {
+                        logAndNotify("FAILED STAGE: FFmpeg Validation")
+                        logAndNotify("REASON: Native FFmpeg execution test failed.")
+                        isRunning = false
+                        return@Thread
                     }
+
+                    // Validate FFprobe
+                    val ffprobeVersion = testNativeBinary("FFprobe", ffprobePath, ffprobeBinPath, ldLibraryPath)
+                    if (ffprobeVersion == null) {
+                        logAndNotify("FAILED STAGE: FFprobe Validation")
+                        logAndNotify("REASON: Native FFprobe execution test failed.")
+                        isRunning = false
+                        return@Thread
+                    }
+
+                    // Configure encoding.xml
+                    configureEncodingSettings(configDir, ffmpegPath)
+
+                    // ── 6. Verify .NET Runtime Layout ──
+                    val loaderPath = File(nativeLibDir, "libld.so").absolutePath
+                    val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
+                    val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
+                    val hostfxrPath = File(fxrDir, "libhostfxr.so")
+                    val hostpolicyPath = File(jellyfinHome, "libhostpolicy.so")
+                    val coreclrPath = File(jellyfinHome, "libcoreclr.so")
+
+                    logAndNotify(".NET runtime:")
+                    logAndNotify("  Version: 9.0.16")
+                    logAndNotify("  libhostfxr.so: ${if (hostfxrPath.exists()) "OK" else "MISSING"}")
+                    logAndNotify("  libhostpolicy.so: ${if (hostpolicyPath.exists()) "OK" else "MISSING"}")
+                    logAndNotify("  libcoreclr.so: ${if (coreclrPath.exists()) "OK" else "MISSING"}")
+
+                    if (!File(loaderPath).exists() || !File(jellyfinBin).exists() || !jellyfinDll.exists() ||
+                        !hostfxrPath.exists() || !hostpolicyPath.exists() || !coreclrPath.exists()) {
+                        logAndNotify("FAILED STAGE: .NET Runtime Validation")
+                        logAndNotify("REASON: One or more required .NET runtime components are missing.")
+                        isRunning = false
+                        return@Thread
+                    }
+
+                    // Network Configuration
+                    configureNetworkSettings(configDir)
+
+                    // ── 7. Start Jellyfin Process ──
+                    logAndNotify("Jellyfin process started")
+                    val processBuilder = ProcessBuilder(
+                        loaderPath,
+                        jellyfinBin,
+                        "--nonetchange",
+                        "--datadir",   dataDir.absolutePath,
+                        "--configdir", configDir.absolutePath,
+                        "--cachedir",  cacheDir.absolutePath,
+                        "--logdir",    logDir.absolutePath,
+                        "--webdir",    webDir.absolutePath
+                    )
+
+                    processBuilder.directory(jellyfinHome)
+
+                    val env = processBuilder.environment()
+                    env.remove("LD_PRELOAD")
+                    env["LD_LIBRARY_PATH"] = ldLibraryPath
+                    env["DOTNET_ROOT"] = dotnetRoot.absolutePath
+                    env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
+                    env["DOTNET_gcServer"] = "0"
+                    env["DOTNET_System_GC_Server"] = "false"
+                    env["DOTNET_GCHeapHardLimit"] = "200000000"
+                    env["COREHOST_TRACE"] = "1"
+
+                    val currentPath = env["PATH"] ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
+                    env["PATH"] = "$nativeLibDir:${jellyfinHome.absolutePath}:$currentPath"
+
+                    processBuilder.redirectErrorStream(true)
+
+                    val process = processBuilder.start()
+                    jellyfinProcess = process
+
+                    // Log output in background
+                    Thread {
+                        try {
+                            val reader = BufferedReader(InputStreamReader(process.inputStream))
+                            var line: String?
+                            while (reader.readLine().also { line = it } != null) {
+                                logAndNotify(line ?: "")
+                            }
+                        } catch (_: Exception) {}
+                    }.start()
+
+                    // ── 8. Verify HTTP Endpoint 127.0.0.1:8096 ──
+                    logAndNotify("Checking Jellyfin HTTP endpoint...")
+                    val httpSuccess = waitForHttpServer("http://127.0.0.1:8096/health", 60)
+
+                    logAndNotify("HTTP 127.0.0.1:8096: ${if (httpSuccess) "OK" else "FAILED"}")
+
+                    if (httpSuccess) {
+                        isRunning = true
+                        logAndNotify("=== JELLYFIN SERVER RUNNING ===")
+                    } else {
+                        logAndNotify("FAILED STAGE: HTTP Health Verification")
+                        logAndNotify("REASON: Server process started but http://127.0.0.1:8096 did not respond within timeout.")
+                        isRunning = false
+                        process.destroy()
+                    }
+
+                    val exitCode = process.waitFor()
+                    logAndNotify("Jellyfin process exited with code $exitCode")
                 } catch (e: Exception) {
-                    logAndNotify("ERROR: Failed to set up jellyfin-ffmpeg: ${e.message}")
+                    logAndNotify("ERROR: ${e.message}")
+                    Log.e("JellyfinService", "Server error", e)
+                } finally {
                     isRunning = false
-                    return@Thread
+                    jellyfinProcess = null
+                    stopSelf()
                 }
-
-                // Verify file existence
-                val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
-                val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
-                val hostfxrPath = File(fxrDir, "libhostfxr.so")
-                val hostpolicyPath = File(jellyfinHome, "libhostpolicy.so")
-                val coreclrPath = File(jellyfinHome, "libcoreclr.so")
-                val sslPath = File(jellyfinHome, "libssl.so")
-                val cryptoPath = File(jellyfinHome, "libcrypto.so")
-                val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
-                val depsPath = File(jellyfinHome, "jellyfin.deps.json")
-
-                logAndNotify("Verifying required files before launch:")
-                logAndNotify("  Loader exists: ${File(loaderPath).exists()}")
-                logAndNotify("  Apphost exists: ${File(jellyfinBin).exists()}")
-                logAndNotify("  Jellyfin DLL exists: ${jellyfinDll.exists()}")
-                logAndNotify("  hostfxr exists: ${hostfxrPath.exists()}")
-                logAndNotify("  hostpolicy exists: ${hostpolicyPath.exists()}")
-                logAndNotify("  coreclr exists: ${coreclrPath.exists()}")
-                logAndNotify("  libssl exists: ${sslPath.exists()}")
-                logAndNotify("  libcrypto exists: ${cryptoPath.exists()}")
-                logAndNotify("  ffmpeg exists: ${ffmpegPath.exists()} (canExecute: ${ffmpegPath.canExecute()})")
-                logAndNotify("  ffprobe exists: ${ffprobePath.exists()} (canExecute: ${ffprobePath.canExecute()})")
-                logAndNotify("  runtimeconfig exists: ${runtimeconfigPath.exists()}")
-                logAndNotify("  deps exists: ${depsPath.exists()}")
-
-                if (!File(loaderPath).exists()) {
-                    logAndNotify("ERROR: libld.so loader not found at $loaderPath")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!File(jellyfinBin).exists()) {
-                    logAndNotify("ERROR: libjellyfin.so apphost not found at $jellyfinBin")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!jellyfinDll.exists()) {
-                    logAndNotify("ERROR: Jellyfin assembly not found at ${jellyfinDll.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!hostfxrPath.exists()) {
-                    logAndNotify("ERROR: .NET 9 ARM64 runtime is missing.\nExpected libhostfxr.so at: ${hostfxrPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!hostpolicyPath.exists()) {
-                    logAndNotify("ERROR: .NET 9 ARM64 hostpolicy is missing.\nExpected libhostpolicy.so at: ${hostpolicyPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!coreclrPath.exists()) {
-                    logAndNotify("ERROR: .NET 9 ARM64 coreclr is missing.\nExpected libcoreclr.so at: ${coreclrPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!sslPath.exists()) {
-                    logAndNotify("ERROR: OpenSSL libssl.so is missing at: ${sslPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!cryptoPath.exists()) {
-                    logAndNotify("ERROR: OpenSSL libcrypto.so is missing at: ${cryptoPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!runtimeconfigPath.exists()) {
-                    logAndNotify("ERROR: runtimeconfig.json is missing at: ${runtimeconfigPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-                if (!depsPath.exists()) {
-                    logAndNotify("ERROR: deps.json is missing at: ${depsPath.absolutePath}")
-                    isRunning = false
-                    return@Thread
-                }
-
-                // Log launch parameters
-                logAndNotify("Jellyfin root: ${jellyfinHome.absolutePath}")
-                logAndNotify("Jellyfin DLL: ${jellyfinDll.absolutePath}")
-                logAndNotify("runtimeconfig.json: ${runtimeconfigPath.absolutePath}")
-                logAndNotify("deps.json: ${depsPath.absolutePath}")
-                logAndNotify(".NET root: ${dotnetRoot.absolutePath}")
-                logAndNotify("hostfxr: ${hostfxrPath.absolutePath}")
-                logAndNotify("hostpolicy: ${hostpolicyPath.absolutePath}")
-                logAndNotify("coreclr: ${coreclrPath.absolutePath}")
-                logAndNotify("libssl: ${sslPath.absolutePath}")
-                logAndNotify("libcrypto: ${cryptoPath.absolutePath}")
-                logAndNotify("runtime version: 9.0.16")
-                logAndNotify("target RID: linux-arm64")
-                logAndNotify("deployment model: self-contained")
-
-                val dataDir   = File(jellyfinHome, "data").also { it.mkdirs() }
-                val configDir = File(jellyfinHome, "config").also { it.mkdirs() }
-                val cacheDir  = File(jellyfinHome, "cache").also { it.mkdirs() }
-                val logDir    = File(jellyfinHome, "log").also { it.mkdirs() }
-                val webDir    = File(jellyfinHome, "jellyfin-web")
-
-                // Auto-configure IP binding and remote access
-                configureNetworkSettings(configDir)
-
-                // Always force-overwrite encoding.xml with correct absolute FFmpeg path.
-                // This ensures stale paths from previous installs or old binaries never persist.
-                configureEncodingSettings(configDir, ffmpegPath)
-
-                // Build the LD_LIBRARY_PATH that the spawned processes will use
-                val ldLibraryPath = "${jellyfinHome.absolutePath}:$nativeLibDir"
-
-                // === FFMPEG PREFLIGHT ===
-                // Run the exact binaries Jellyfin will use.
-                // These run with the same LD_LIBRARY_PATH as the Jellyfin process.
-                // Results are logged but do NOT abort startup — Jellyfin's EncoderValidator is the final judge.
-                logAndNotify("=== FFMPEG PREFLIGHT ===")
-                runFFmpegPreflight(ffmpegPath, ffprobePath, ldLibraryPath)
-
-                val processBuilder = ProcessBuilder(
-                    loaderPath,
-                    jellyfinBin,
-                    "--nonetchange",
-                    "--datadir",   dataDir.absolutePath,
-                    "--configdir", configDir.absolutePath,
-                    "--cachedir",  cacheDir.absolutePath,
-                    "--logdir",    logDir.absolutePath,
-                    "--webdir",    webDir.absolutePath
-                )
-
-                // Set working directory
-                processBuilder.directory(jellyfinHome)
-
-                val env = processBuilder.environment()
-                env.remove("LD_PRELOAD")
-                env["LD_LIBRARY_PATH"] = ldLibraryPath
-                env["DOTNET_ROOT"] = dotnetRoot.absolutePath
-                env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
-                env["DOTNET_gcServer"] = "0"
-                env["DOTNET_System_GC_Server"] = "false"
-                env["DOTNET_GCHeapHardLimit"] = "200000000"
-                env["COREHOST_TRACE"] = "1"
-
-                // Set PATH to include jellyfinHome so spawned ffmpeg/ffprobe subprocesses can be found by name
-                val currentPath = env["PATH"] ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
-                env["PATH"] = "${jellyfinHome.absolutePath}:$currentPath"
-
-                processBuilder.redirectErrorStream(true)
-
-                val process = processBuilder.start()
-                jellyfinProcess = process
-
-                logAndNotify("Jellyfin process started. Access at http://127.0.0.1:8096")
-
-                val reader = BufferedReader(InputStreamReader(process.inputStream))
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    logAndNotify(line ?: "")
-                }
-
-                val exitCode = process.waitFor()
-                logAndNotify("Jellyfin exited with code $exitCode")
-            } catch (e: Exception) {
-                logAndNotify("Error: ${e.message}")
-                Log.e("JellyfinService", "Server error", e)
-            } finally {
-                isRunning = false
-                jellyfinProcess = null
-                stopSelf()
             }
         }.start()
     }
 
-    fun stopServer() {
-        logAndNotify("Stopping Jellyfin Server...")
-        jellyfinProcess?.destroy()
-        jellyfinProcess = null
-        isRunning = false
+    /**
+     * Robust, Idempotent Symlink Management Algorithm
+     * Handles Cases A, B, C, D, E explicitly with full verification and reporting.
+     */
+    private fun safeCreateSymlink(sourceFile: File, destFile: File) {
+        val srcPath = sourceFile.absolutePath
+        val destPath = destFile.absolutePath
+        val expectedTarget = srcPath
+
+        logAndNotify("Symlink:")
+        logAndNotify("  Source: $srcPath")
+        logAndNotify("  Destination: $destPath")
+
+        val destPathObj = Paths.get(destPath)
+        val exists = Files.exists(destPathObj) || Files.isSymbolicLink(destPathObj)
+
+        if (!exists) {
+            // CASE A: Destination does not exist -> Create
+            logAndNotify("  Exists: false")
+            logAndNotify("  Action: CREATE")
+            try {
+                Os.symlink(srcPath, destPath)
+                logAndNotify("  Result: SUCCESS")
+            } catch (e: Exception) {
+                logAndNotify("  Result: FAILED (${e.message})")
+                throw e
+            }
+        } else {
+            // Destination exists
+            val isSymlink = Files.isSymbolicLink(destPathObj)
+            val isDir = destFile.isDirectory && !isSymlink
+            val isRegularFile = destFile.isFile && !isSymlink
+
+            logAndNotify("  Exists: true")
+
+            if (isSymlink) {
+                logAndNotify("  Type: SYMLINK")
+                val existingTarget = try {
+                    Files.readSymbolicLink(destPathObj).toString()
+                } catch (e: Exception) {
+                    "unknown"
+                }
+
+                logAndNotify("  Existing target: $existingTarget")
+                logAndNotify("  Expected target: $expectedTarget")
+
+                if (existingTarget == expectedTarget) {
+                    // CASE B: Already points to correct target -> Reuse
+                    logAndNotify("  Action: REUSED")
+                    logAndNotify("  Result: SUCCESS")
+                } else {
+                    // CASE C: Points to wrong target -> Remove symlink ONLY and recreate
+                    logAndNotify("  Action: STALE SYMLINK — Recreating")
+                    try {
+                        Files.delete(destPathObj) // Deletes ONLY the symlink, not target
+                        Os.symlink(srcPath, destPath)
+                        logAndNotify("  Result: SUCCESS")
+                    } catch (e: Exception) {
+                        logAndNotify("  Result: FAILED (${e.message})")
+                        throw e
+                    }
+                }
+            } else if (isDir) {
+                // CASE E: Real Directory -> Refuse deletion
+                logAndNotify("  Type: DIRECTORY")
+                logAndNotify("  Action: REFUSED (Real directory exists at destination)")
+                logAndNotify("  Result: REFUSED")
+                return
+            } else if (isRegularFile) {
+                // CASE D: Real File -> Refuse deletion
+                logAndNotify("  Type: FILE")
+                logAndNotify("  Action: REFUSED (Real file exists at destination)")
+                logAndNotify("  Result: REFUSED")
+                return
+            }
+        }
+
+        // Verification step
+        val isLinkNow = Files.isSymbolicLink(destPathObj)
+        val resolvedTarget = try { Files.readSymbolicLink(destPathObj).toString() } catch (_: Exception) { "unknown" }
+        val targetExists = File(resolvedTarget).exists()
+        val verified = isLinkNow && resolvedTarget == expectedTarget && targetExists
+
+        logAndNotify("  Symlink verification:")
+        logAndNotify("    Destination exists: true")
+        logAndNotify("    Is symbolic link: $isLinkNow")
+        logAndNotify("    Resolved target: $resolvedTarget")
+        logAndNotify("    Expected target: $expectedTarget")
+        logAndNotify("    Target exists: $targetExists")
+        logAndNotify("    Verification: ${if (verified) "SUCCESS" else "FAILED"}")
+
+        if (!verified) {
+            throw Exception("Symlink verification failed for $destPath")
+        }
+    }
+
+    private fun testNativeBinary(
+        label: String,
+        execFile: File,
+        elfBinaryFile: File,
+        ldLibraryPath: String
+    ): String? {
+        val exists = execFile.exists()
+        val executable = execFile.canExecute()
+        val isArm64 = inspectElfArm64(elfBinaryFile)
+
+        logAndNotify("$label:")
+        logAndNotify("  Path: ${execFile.absolutePath}")
+        logAndNotify("  Exists: $exists")
+        logAndNotify("  Executable: $executable")
+        logAndNotify("  Architecture: ${if (isArm64) "ARM64" else "UNKNOWN"}")
+
+        if (!exists || !executable || !isArm64) {
+            logAndNotify("ERROR: $label failed pre-execution check!")
+            return null
+        }
+
+        var versionFound: String? = null
+        var exitCode = -1
+        val output = StringBuilder()
+
+        try {
+            val pb = ProcessBuilder(execFile.absolutePath, "-version")
+            pb.directory(execFile.parentFile)
+            pb.redirectErrorStream(true)
+            val pbEnv = pb.environment()
+            pbEnv["LD_LIBRARY_PATH"] = ldLibraryPath
+
+            val proc = pb.start()
+            val reader = BufferedReader(InputStreamReader(proc.inputStream))
+            var lineIdx = 0
+            var ln: String?
+            while (reader.readLine().also { ln = it } != null) {
+                val l = ln ?: continue
+                output.append(l).append("\n")
+                if (lineIdx < 5) {
+                    logAndNotify("  [$label] $l")
+                    if (l.contains("ffmpeg version") || l.contains("ffprobe version")) {
+                        versionFound = l.substringBefore("Copyright").trim()
+                    }
+                }
+                lineIdx++
+            }
+            exitCode = proc.waitFor()
+        } catch (e: Exception) {
+            logAndNotify("ERROR: Native execution of $label failed: ${e.message}")
+            return null
+        }
+
+        logAndNotify("  Exit code: $exitCode")
+        if (exitCode == 0 && versionFound != null) {
+            logAndNotify("  Version: $versionFound")
+            logAndNotify("  Test: SUCCESS")
+            return versionFound
+        } else {
+            logAndNotify("ERROR: $label test failed! Exit code $exitCode. Output:\n${output.take(500)}")
+            return null
+        }
+    }
+
+    private fun waitForHttpServer(urlStr: String, timeoutSeconds: Int): Boolean {
+        val startTime = System.currentTimeMillis()
+        val endTime = startTime + (timeoutSeconds * 1000)
+
+        while (System.currentTimeMillis() < endTime) {
+            try {
+                val url = URL(urlStr)
+                val conn = url.openConnection() as HttpURLConnection
+                conn.connectTimeout = 1000
+                conn.readTimeout = 1000
+                conn.requestMethod = "GET"
+                val code = conn.responseCode
+                conn.disconnect()
+                if (code == 200 || code == 302 || code == 401) {
+                    return true
+                }
+            } catch (_: Exception) {}
+            Thread.sleep(1000)
+        }
+        return false
+    }
+
+    private fun runCleanMigration(jellyfinHome: File, configDir: File) {
+        try {
+            File(jellyfinHome, "ffmpeg").delete()
+            File(jellyfinHome, "ffprobe").delete()
+
+            val encodingXml = File(configDir, "encoding.xml")
+            if (encodingXml.exists()) {
+                val content = encodingXml.readText()
+                if (content.contains("files/jellyfin/ffmpeg")) {
+                    logAndNotify("Clean migration: Detected stale encoding.xml path. Cleaning...")
+                    encodingXml.delete()
+                }
+            }
+        } catch (e: Exception) {
+            logAndNotify("WARNING: Clean migration step encountered error: ${e.message}")
+        }
+    }
+
+    private fun configureEncodingSettings(configDir: File, ffmpegPath: File) {
+        val encodingXml = File(configDir, "encoding.xml")
+        val xmlContent = """<?xml version="1.0" encoding="utf-8"?>
+<EncodingOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>
+  <EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>
+</EncodingOptions>"""
+        try {
+            encodingXml.writeText(xmlContent)
+            logAndNotify("encoding.xml:")
+            logAndNotify("  FFmpeg path: ${ffmpegPath.absolutePath}")
+            logAndNotify("  Configuration: VALID")
+        } catch (e: Exception) {
+            logAndNotify("WARNING: Failed to write encoding.xml: ${e.message}")
+        }
+    }
+
+    private fun configureNetworkSettings(configDir: File) {
+        val networkXml = File(configDir, "network.xml")
+        val defaultXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <NetworkConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <RequireHttps>false</RequireHttps>
+              <CertificatePath />
+              <CertificatePassword />
+              <BaseUrl />
+              <EnableRemoteAccess>true</EnableRemoteAccess>
+              <LocalNetworkSubnets />
+              <LocalNetworkAddresses />
+              <EnableIPv4>true</EnableIPv4>
+              <EnableIPv6>false</EnableIPv6>
+              <IsStartupWizardCompleted>false</IsStartupWizardCompleted>
+            </NetworkConfiguration>
+        """.trimIndent()
+
+        try {
+            if (!networkXml.exists()) {
+                networkXml.writeText(defaultXml)
+            } else {
+                var content = networkXml.readText()
+                if (content.contains("<EnableRemoteAccess>false</EnableRemoteAccess>")) {
+                    content = content.replace("<EnableRemoteAccess>false</EnableRemoteAccess>", "<EnableRemoteAccess>true</EnableRemoteAccess>")
+                    networkXml.writeText(content)
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    private fun inspectElfArm64(file: File): Boolean {
+        try {
+            java.io.FileInputStream(file).use { fis ->
+                val header = ByteArray(64)
+                if (fis.read(header) == 64) {
+                    if (header[0] == 0x7F.toByte() && header[1] == 'E'.code.toByte() &&
+                        header[2] == 'L'.code.toByte() && header[3] == 'F'.code.toByte()) {
+                        val is64Bit = header[4] == 2.toByte()
+                        val machine = ((header[19].toInt() and 0xFF) shl 8) or (header[18].toInt() and 0xFF)
+                        return is64Bit && machine == 183
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+        return false
     }
 
     private fun extractAssets(destDir: File) {
@@ -441,304 +629,16 @@ class JellyfinService : Service() {
         }
     }
 
+    fun stopServer() {
+        logAndNotify("Stopping Jellyfin Server...")
+        jellyfinProcess?.destroy()
+        jellyfinProcess = null
+        isRunning = false
+    }
+
     override fun onDestroy() {
         stopServer()
         super.onDestroy()
-    }
-
-    // -------------------------------------------------------------------------
-    // FFmpeg Preflight — inspects and tests the exact binaries Jellyfin will use
-    // -------------------------------------------------------------------------
-
-    /**
-     * Inspect ELF header bytes to determine:
-     * - Is it an ELF file at all?
-     * - Is it 64-bit AArch64?
-     * - Is it ET_EXEC (standalone), ET_DYN (shared/PIE)?
-     * - Does it have the PIE flag (i.e. a PIE executable disguised as ET_DYN)?
-     */
-    private data class ElfInfo(
-        val isElf: Boolean,
-        val is64Bit: Boolean,
-        val isArm64: Boolean,
-        val elfType: String,         // "ET_EXEC", "ET_DYN", "ET_DYN+PIE", "ET_DYN+NOPIE", "UNKNOWN"
-        val isExecutable: Boolean    // true if ET_EXEC or ET_DYN+PIE
-    )
-
-    private fun inspectElf(file: File): ElfInfo {
-        try {
-            java.io.FileInputStream(file).use { fis ->
-                val header = ByteArray(64)
-                if (fis.read(header) < 64) return ElfInfo(false, false, false, "TRUNCATED", false)
-
-                // ELF magic
-                if (header[0] != 0x7F.toByte() || header[1] != 'E'.code.toByte() ||
-                    header[2] != 'L'.code.toByte() || header[3] != 'F'.code.toByte()) {
-                    return ElfInfo(false, false, false, "NOT_ELF", false)
-                }
-
-                val is64Bit = header[4] == 2.toByte()
-                // e_machine at offset 18 (little-endian 16-bit), AArch64 = 183 = 0xB7
-                val machine = (header[19].toInt() and 0xFF).shl(8) or (header[18].toInt() and 0xFF)
-                val isArm64 = is64Bit && machine == 183
-
-                // e_type at offset 16 (little-endian 16-bit)
-                val eType = (header[17].toInt() and 0xFF).shl(8) or (header[16].toInt() and 0xFF)
-
-                // Read dynamic section to check for DF_1_PIE flag
-                // We'll parse PT_DYNAMIC from program headers to find FLAGS_1 tag
-                // For simplicity: read first 4KB to find DT_FLAGS_1
-                val hasPieFlag = hasDynPieFlag(file)
-
-                val elfType = when (eType) {
-                    2 -> "ET_EXEC"             // traditional standalone executable
-                    3 -> if (hasPieFlag) "ET_DYN+PIE" else "ET_DYN+NOPIE"
-                    else -> "UNKNOWN($eType)"
-                }
-                val isExecutable = eType == 2 || (eType == 3 && hasPieFlag)
-
-                return ElfInfo(true, is64Bit, isArm64, elfType, isExecutable)
-            }
-        } catch (e: Exception) {
-            return ElfInfo(false, false, false, "READ_ERROR:${e.message}", false)
-        }
-    }
-
-    /** Check for DT_FLAGS_1 with DF_1_PIE (0x08000000) in the dynamic section. */
-    private fun hasDynPieFlag(file: File): Boolean {
-        try {
-            // Read up to 1MB to find the dynamic section
-            val bytes = file.readBytes().let { if (it.size > 1_048_576) it.copyOf(1_048_576) else it }
-            // DT_FLAGS_1 = 0x6ffffffb, DF_1_PIE = 0x08000000
-            // Search for the FLAGS_1 tag in 8-byte aligned chunks (little-endian 64-bit)
-            var i = 0
-            while (i + 16 <= bytes.size) {
-                val tag = readLe64(bytes, i)
-                if (tag == 0x6ffffffbL) {
-                    val value = readLe64(bytes, i + 8)
-                    return (value and 0x08000000L) != 0L
-                }
-                i += 8
-            }
-        } catch (_: Exception) {}
-        return false
-    }
-
-    private fun readLe64(bytes: ByteArray, offset: Int): Long {
-        var result = 0L
-        for (i in 0..7) {
-            result = result or ((bytes[offset + i].toLong() and 0xFF).shl(i * 8))
-        }
-        return result
-    }
-
-    private fun resolveSymlink(file: File): File {
-        return try {
-            val path = java.nio.file.Paths.get(file.absolutePath)
-            if (java.nio.file.Files.isSymbolicLink(path)) {
-                val target = java.nio.file.Files.readSymbolicLink(path)
-                if (target.isAbsolute) target.toFile() else File(file.parentFile, target.toString())
-            } else file
-        } catch (_: Exception) { file }
-    }
-
-    /**
-     * Run the FFmpeg preflight test.
-     * Executes both binaries with the same LD_LIBRARY_PATH that Jellyfin will use.
-     * Reports full diagnostics. Does NOT abort startup — only logs.
-     */
-    private fun runFFmpegPreflight(ffmpegPath: File, ffprobePath: File, ldLibraryPath: String) {
-        preflightOne("FFmpeg", ffmpegPath, ldLibraryPath)
-        preflightOne("FFprobe", ffprobePath, ldLibraryPath)
-    }
-
-    private fun preflightOne(label: String, binaryPath: File, ldLibraryPath: String) {
-        logAndNotify("")
-        logAndNotify("$label path: ${binaryPath.absolutePath}")
-        logAndNotify("$label exists: ${binaryPath.exists()}")
-
-        if (!binaryPath.exists()) {
-            logAndNotify("$label executable: false")
-            logAndNotify("$label ELF type: N/A")
-            logAndNotify("$label architecture: N/A")
-            logAndNotify("$label version: N/A")
-            logAndNotify("$label exit code: N/A")
-            logAndNotify("$label test: FAILED (not found)")
-            return
-        }
-
-        val targetFile = resolveSymlink(binaryPath)
-        // If binaryPath is a shell wrapper script, find the .bin for ELF inspection
-        val elfFile = if (targetFile.canRead() && targetFile.length() < 4096) {
-            // Small file -> likely a shell script; look for ffmpeg.bin / ffprobe.bin sibling
-            val binSibling = File(binaryPath.parentFile, binaryPath.name + ".bin")
-            if (binSibling.exists()) binSibling else targetFile
-        } else targetFile
-        logAndNotify("$label script: ${targetFile.absolutePath}")
-        logAndNotify("$label executable binary: ${elfFile.absolutePath}")
-        logAndNotify("$label executable: ${binaryPath.canExecute()}")
-
-        val elf = inspectElf(elfFile)
-        logAndNotify("$label ELF type: ${elf.elfType}")
-        logAndNotify("$label architecture: ${if (elf.isArm64) "ARM64 (AArch64)" else "UNKNOWN"}")
-        logAndNotify("$label is valid executable: ${elf.isExecutable}")
-
-        // Read NEEDED libs from dynamic section
-        val neededLibs = readNeededLibs(elfFile)
-        logAndNotify("$label native dependencies: ${neededLibs.joinToString(", ").ifEmpty { "(none)" }}")
-
-        // Classify deps — jellyfin-ffmpeg uses libg_*.so (patched glibc names)
-        val knownGlibcNames = setOf("libg_libc.so","libg_m.so","libg_dl.so","libg_pthread.so",
-            "libc.so","libm.so","libdl.so","libpthread.so","libz.so")
-        val unknownLibs = neededLibs.filterNot { it in knownGlibcNames }
-        logAndNotify("$label glibc/bionic compatibility: ${if (unknownLibs.isEmpty()) "OK (only basic C runtime deps)" else "WARNING — unexpected deps: $unknownLibs"}")
-
-        // Execute with the correct environment
-        var versionLine = ""
-        var exitCode = -1
-        val output = StringBuilder()
-        var execException: String? = null
-
-        try {
-            val pb = ProcessBuilder(binaryPath.absolutePath, "-version")
-            pb.redirectErrorStream(true)
-            val pbEnv = pb.environment()
-            pbEnv["LD_LIBRARY_PATH"] = ldLibraryPath
-            val proc = pb.start()
-            val reader = java.io.BufferedReader(java.io.InputStreamReader(proc.inputStream))
-            var lineIdx = 0
-            var ln: String?
-            while (reader.readLine().also { ln = it } != null) {
-                val l = ln ?: continue
-                output.append(l).append("\n")
-                if (lineIdx < 5) {
-                    logAndNotify("  [$label] $l")
-                    if (l.contains("ffmpeg version") || l.contains("ffprobe version")) versionLine = l
-                }
-                lineIdx++
-            }
-            exitCode = proc.waitFor()
-        } catch (e: Exception) {
-            execException = e.message
-            logAndNotify("  [$label] EXEC EXCEPTION: ${e.message}")
-        }
-
-        logAndNotify("$label version: ${if (versionLine.isNotEmpty()) versionLine else "(not detected)"}")
-        logAndNotify("$label exit code: $exitCode")
-
-        if (exitCode == 159) {
-            logAndNotify("$label test: FAILED (exit code 159 = SIGSYS — binary blocked by Android SECCOMP/Bionic sandbox)")
-            logAndNotify("$label SIGSYS diagnosis: binary is likely a statically-linked glibc binary (e.g. John Van Sickle build).")
-            logAndNotify("$label SIGSYS diagnosis: glibc static init calls arch_prctl/set_robust_list which are blocked on Android.")
-            logAndNotify("$label SIGSYS diagnosis: Replace with an Android NDK / Bionic-compiled binary.")
-            captureLogcat()
-        } else if (exitCode == 0 && versionLine.isNotEmpty()) {
-            logAndNotify("$label test: SUCCESS")
-        } else if (execException != null) {
-            logAndNotify("$label test: FAILED (exception: $execException)")
-            captureLogcat()
-        } else {
-            logAndNotify("$label test: FAILED (exit $exitCode, output: ${output.take(200)})")
-            captureLogcat()
-        }
-    }
-
-    /** Extract NEEDED library names from ELF dynamic section. */
-    private fun readNeededLibs(file: File): List<String> {
-        val result = mutableListOf<String>()
-        try {
-            // Use readelf-equivalent: parse ELF dynamic section
-            // Run `readelf -d` via ProcessBuilder if available, else do manual parse
-            val pb = ProcessBuilder("readelf", "-d", file.absolutePath)
-            pb.redirectErrorStream(true)
-            val proc = pb.start()
-            val reader = java.io.BufferedReader(java.io.InputStreamReader(proc.inputStream))
-            var ln: String?
-            val neededRegex = Regex("""NEEDED\s+Shared library: \[(.+)]""")
-            while (reader.readLine().also { ln = it } != null) {
-                val m = neededRegex.find(ln ?: "") ?: continue
-                result.add(m.groupValues[1])
-            }
-            proc.waitFor()
-        } catch (_: Exception) {}
-        return result
-    }
-
-    private fun captureLogcat() {
-        logAndNotify("Capturing system logcat for crash details...")
-        try {
-            val proc = ProcessBuilder("logcat", "-d", "-t", "30", "--pid=${android.os.Process.myPid()}")
-                .redirectErrorStream(true).start()
-            val reader = java.io.BufferedReader(java.io.InputStreamReader(proc.inputStream))
-            var ln: String?
-            var count = 0
-            while (reader.readLine().also { ln = it } != null && count < 60) {
-                logAndNotify("  [logcat] $ln")
-                count++
-            }
-            proc.waitFor()
-        } catch (e: Exception) {
-            logAndNotify("Failed to capture logcat: ${e.message}")
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Configuration helpers
-    // -------------------------------------------------------------------------
-
-    private fun configureNetworkSettings(configDir: File) {
-        val networkXml = File(configDir, "network.xml")
-        val defaultXml = """
-            <?xml version="1.0" encoding="utf-8"?>
-            <NetworkConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-              <RequireHttps>false</RequireHttps>
-              <CertificatePath />
-              <CertificatePassword />
-              <BaseUrl />
-              <EnableRemoteAccess>true</EnableRemoteAccess>
-              <LocalNetworkSubnets />
-              <LocalNetworkAddresses />
-              <EnableIPv4>true</EnableIPv4>
-              <EnableIPv6>false</EnableIPv6>
-              <IsStartupWizardCompleted>false</IsStartupWizardCompleted>
-            </NetworkConfiguration>
-        """.trimIndent()
-
-        try {
-            if (!networkXml.exists()) {
-                networkXml.writeText(defaultXml)
-                logAndNotify("Created default network.xml: enabled remote access.")
-            } else {
-                var content = networkXml.readText()
-                if (content.contains("<EnableRemoteAccess>false</EnableRemoteAccess>")) {
-                    content = content.replace("<EnableRemoteAccess>false</EnableRemoteAccess>",
-                        "<EnableRemoteAccess>true</EnableRemoteAccess>")
-                    networkXml.writeText(content)
-                    logAndNotify("Auto-configured network.xml: enabled remote access.")
-                }
-            }
-        } catch (e: Exception) {
-            logAndNotify("WARNING: Failed to auto-configure network.xml: ${e.message}")
-        }
-    }
-
-    /**
-     * Always force-overwrite encoding.xml with the verified FFmpeg path.
-     * This prevents stale paths from previous installs from interfering.
-     */
-    private fun configureEncodingSettings(configDir: File, ffmpegPath: File) {
-        val encodingXml = File(configDir, "encoding.xml")
-        val xmlContent = """<?xml version="1.0" encoding="utf-8"?>
-<EncodingOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>
-  <EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>
-</EncodingOptions>"""
-        try {
-            encodingXml.writeText(xmlContent)
-            logAndNotify("encoding.xml written: EncoderAppPath = ${ffmpegPath.absolutePath}")
-        } catch (e: Exception) {
-            logAndNotify("WARNING: Failed to write encoding.xml: ${e.message}")
-        }
     }
 
     private fun createNotificationChannel() {
@@ -777,5 +677,6 @@ class JellyfinService : Service() {
     companion object {
         private const val CHANNEL_ID = "JellyfinServiceChannel"
         private const val NOTIFICATION_ID = 1001
+        private val startupLock = Object()
     }
 }
