@@ -101,6 +101,18 @@ class JellyfinService : Service() {
                     }
                 }
 
+                // Always ensure ffmpeg and ffprobe are executable
+                val ffmpegFile = File(jellyfinHome, "ffmpeg")
+                val ffprobeFile = File(jellyfinHome, "ffprobe")
+                if (ffmpegFile.exists()) {
+                    val ok = ffmpegFile.setExecutable(true, false)
+                    logAndNotify("Setting ffmpeg executable permission: $ok")
+                }
+                if (ffprobeFile.exists()) {
+                    val ok = ffprobeFile.setExecutable(true, false)
+                    logAndNotify("Setting ffprobe executable permission: $ok")
+                }
+
                 val nativeLibDir = applicationInfo.nativeLibraryDir
                 val dotnetRoot = File(filesDir, "dotnet")
                 val fxrDir = File(dotnetRoot, "host/fxr/9.0.16")
@@ -176,6 +188,8 @@ class JellyfinService : Service() {
                 val coreclrPath = File(jellyfinHome, "libcoreclr.so")
                 val sslPath = File(jellyfinHome, "libssl.so")
                 val cryptoPath = File(jellyfinHome, "libcrypto.so")
+                val ffmpegPath = File(jellyfinHome, "ffmpeg")
+                val ffprobePath = File(jellyfinHome, "ffprobe")
                 val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
                 val depsPath = File(jellyfinHome, "jellyfin.deps.json")
 
@@ -188,6 +202,8 @@ class JellyfinService : Service() {
                 logAndNotify("  coreclr exists: ${coreclrPath.exists()}")
                 logAndNotify("  libssl exists: ${sslPath.exists()}")
                 logAndNotify("  libcrypto exists: ${cryptoPath.exists()}")
+                logAndNotify("  ffmpeg exists: ${ffmpegPath.exists()} (canExecute: ${ffmpegPath.canExecute()})")
+                logAndNotify("  ffprobe exists: ${ffprobePath.exists()} (canExecute: ${ffprobePath.canExecute()})")
                 logAndNotify("  runtimeconfig exists: ${runtimeconfigPath.exists()}")
                 logAndNotify("  deps exists: ${depsPath.exists()}")
 
@@ -291,6 +307,11 @@ class JellyfinService : Service() {
                 env["DOTNET_System_GC_Server"] = "false"
                 env["DOTNET_GCHeapHardLimit"] = "200000000"
                 env["COREHOST_TRACE"] = "1"
+
+                // Set PATH to include jellyfinHome so spawned processes (ffmpeg/ffprobe) can be found
+                val currentPath = env["PATH"] ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
+                env["PATH"] = "${jellyfinHome.absolutePath}:$currentPath"
+
                 processBuilder.redirectErrorStream(true)
 
                 val process = processBuilder.start()
