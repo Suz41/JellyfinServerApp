@@ -112,9 +112,11 @@ class JellyfinService : Service() {
 
                 // Construct .NET runtime structure with symbolic links to nativeLibDir
                 try {
-                    // Clean up old .so symlinks and binaries in jellyfinHome first (since native library dir path changes on upgrades)
+                    // Clean up old .so symlinks, versioned lib symlinks, and old binaries
                     jellyfinHome.listFiles()?.forEach { file ->
-                        if (file.name.endsWith(".so") || file.name.contains(".so.") || file.name == "ffmpeg" || file.name == "ffprobe") {
+                        if (file.name.endsWith(".so") || file.name.contains(".so.") ||
+                            file.name == "ffmpeg" || file.name == "ffprobe" ||
+                            file.name == "ffmpeg.bin" || file.name == "ffprobe.bin") {
                             file.delete()
                         }
                     }
@@ -127,13 +129,16 @@ class JellyfinService : Service() {
                                 Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                             }
 
+                            // Skip libffmpeg.so / libffprobe.so — we now use jellyfin-ffmpeg from assets
+                            if (lib.name == "libffmpeg.so" || lib.name == "libffprobe.so") continue
+
                             val symlinkAppFile = File(jellyfinHome, lib.name)
                             Os.symlink(lib.absolutePath, symlinkAppFile.absolutePath)
 
                             val symlinkRootFile = File(dotnetRoot, lib.name)
                             Os.symlink(lib.absolutePath, symlinkRootFile.absolutePath)
 
-                            // If this is libssl or libcrypto, create versioned symlinks that .NET dynamic prober expects
+                            // Versioned OpenSSL symlinks for .NET
                             if (lib.name == "libssl.so") {
                                 Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.3").absolutePath)
                                 Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.1.1").absolutePath)
@@ -144,19 +149,24 @@ class JellyfinService : Service() {
                                 Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.1.1").absolutePath)
                                 Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.3").absolutePath)
                                 Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.1.1").absolutePath)
-                            } else if (lib.name == "libffmpeg.so") {
-                                // Symlink as executable name - libffmpeg.so IS a PIE executable (ET_DYN + PIE flag)
-                                val symlinkExec = File(jellyfinHome, "ffmpeg")
-                                Os.symlink(lib.absolutePath, symlinkExec.absolutePath)
-                                logAndNotify("Created symlink: ffmpeg -> ${lib.absolutePath}")
-                            } else if (lib.name == "libffprobe.so") {
-                                // Symlink as executable name - libffprobe.so IS a PIE executable (ET_DYN + PIE flag)
-                                val symlinkExec = File(jellyfinHome, "ffprobe")
-                                Os.symlink(lib.absolutePath, symlinkExec.absolutePath)
-                                logAndNotify("Created symlink: ffprobe -> ${lib.absolutePath}")
                             }
 
-                            // Symlink all libraries to shared framework directory (for fallback framework-dependent layout)
+                            // Versioned glibc symlinks for jellyfin-ffmpeg:
+                            // jellyfin-ffmpeg is patched to use libg_*.so names, which are already
+                            // symlinked to jellyfinHome. But we also add standard versioned names
+                            // (libc.so.6 etc.) as symlinks pointing to the same libg_*.so files,
+                            // so that any uninstrumented dependency resolution also works.
+                            when (lib.name) {
+                                "libg_libc.so" -> {
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libc.so.6").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "ld-linux-aarch64.so.1").absolutePath)
+                                }
+                                "libg_m.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libm.so.6").absolutePath)
+                                "libg_dl.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libdl.so.2").absolutePath)
+                                "libg_pthread.so" -> Os.symlink(lib.absolutePath, File(jellyfinHome, "libpthread.so.0").absolutePath)
+                            }
+
+                            // Symlink to shared framework directory
                             val symlinkFile = File(sharedDir, lib.name)
                             Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                         }
@@ -169,8 +179,60 @@ class JellyfinService : Service() {
                     return@Thread
                 }
 
-                // Verify file existence
+                // ── Extract and set up jellyfin-ffmpeg (glibc-linked, patched to use libg_*.so) ──
                 val loaderPath = File(nativeLibDir, "libld.so").absolutePath
+                val ffmpegBinPath = File(jellyfinHome, "ffmpeg.bin")
+                val ffprobeBinPath = File(jellyfinHome, "ffprobe.bin")
+                val ffmpegPath = File(jellyfinHome, "ffmpeg")      // wrapper script
+                val ffprobePath = File(jellyfinHome, "ffprobe")    // wrapper script
+
+                try {
+                    // Extract ffmpeg.bin and ffprobe.bin from the assets zip if not already current
+                    for ((assetName, destFile) in listOf(
+                        "ffmpeg.bin" to ffmpegBinPath,
+                        "ffprobe.bin" to ffprobeBinPath
+                    )) {
+                        logAndNotify("Extracting $assetName from assets...")
+                        assets.open("jellyfin_assets.zip").use { assetStream ->
+                            val zis = java.util.zip.ZipInputStream(assetStream)
+                            var entry = zis.nextEntry
+                            while (entry != null) {
+                                if (entry.name == assetName) {
+                                    destFile.outputStream().use { out ->
+                                        zis.copyTo(out)
+                                    }
+                                    destFile.setExecutable(true, false)
+                                    logAndNotify("  Extracted: ${destFile.absolutePath} (${destFile.length() / 1024 / 1024}MB)")
+                                    break
+                                }
+                                zis.closeEntry()
+                                entry = zis.nextEntry
+                            }
+                            zis.close()
+                        }
+                    }
+
+                    // Write wrapper shell scripts:
+                    // #!/system/bin/sh
+                    // exec /path/to/libld.so /path/to/ffmpeg.bin "$@"
+                    // This makes our glibc loader run the jellyfin-ffmpeg binary with our libg_*.so deps.
+                    for ((wrapperFile, binFile) in listOf(
+                        ffmpegPath to ffmpegBinPath,
+                        ffprobePath to ffprobeBinPath
+                    )) {
+                        wrapperFile.writeText(
+                            "#!/system/bin/sh\nexec $loaderPath ${binFile.absolutePath} \"\$@\"\n"
+                        )
+                        wrapperFile.setExecutable(true, false)
+                        logAndNotify("Wrapper: ${wrapperFile.name} -> $loaderPath ${binFile.absolutePath}")
+                    }
+                } catch (e: Exception) {
+                    logAndNotify("ERROR: Failed to set up jellyfin-ffmpeg: ${e.message}")
+                    isRunning = false
+                    return@Thread
+                }
+
+                // Verify file existence
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
                 val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
                 val hostfxrPath = File(fxrDir, "libhostfxr.so")
@@ -178,8 +240,6 @@ class JellyfinService : Service() {
                 val coreclrPath = File(jellyfinHome, "libcoreclr.so")
                 val sslPath = File(jellyfinHome, "libssl.so")
                 val cryptoPath = File(jellyfinHome, "libcrypto.so")
-                val ffmpegPath = File(jellyfinHome, "ffmpeg")
-                val ffprobePath = File(jellyfinHome, "ffprobe")
                 val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
                 val depsPath = File(jellyfinHome, "jellyfin.deps.json")
 
@@ -508,24 +568,30 @@ class JellyfinService : Service() {
         }
 
         val targetFile = resolveSymlink(binaryPath)
-        logAndNotify("$label symlink target: ${targetFile.absolutePath}")
+        // If binaryPath is a shell wrapper script, find the .bin for ELF inspection
+        val elfFile = if (targetFile.canRead() && targetFile.length() < 4096) {
+            // Small file -> likely a shell script; look for ffmpeg.bin / ffprobe.bin sibling
+            val binSibling = File(binaryPath.parentFile, binaryPath.name + ".bin")
+            if (binSibling.exists()) binSibling else targetFile
+        } else targetFile
+        logAndNotify("$label script: ${targetFile.absolutePath}")
+        logAndNotify("$label executable binary: ${elfFile.absolutePath}")
         logAndNotify("$label executable: ${binaryPath.canExecute()}")
 
-        val elf = inspectElf(targetFile)
+        val elf = inspectElf(elfFile)
         logAndNotify("$label ELF type: ${elf.elfType}")
         logAndNotify("$label architecture: ${if (elf.isArm64) "ARM64 (AArch64)" else "UNKNOWN"}")
         logAndNotify("$label is valid executable: ${elf.isExecutable}")
 
         // Read NEEDED libs from dynamic section
-        val neededLibs = readNeededLibs(targetFile)
+        val neededLibs = readNeededLibs(elfFile)
         logAndNotify("$label native dependencies: ${neededLibs.joinToString(", ").ifEmpty { "(none)" }}")
 
-        // Classify deps
-        val androidSystemLibs = neededLibs.filter { it.startsWith("lib") && !it.contains(".so.") &&
-            (it in listOf("libc.so","libm.so","libdl.so","libz.so","libandroid.so",
-                "libcamera2ndk.so","libmediandk.so","liblog.so","libOpenSLES.so")) }
-        val otherLibs = neededLibs - androidSystemLibs.toSet()
-        logAndNotify("$label Android/Bionic compatibility: ${if (otherLibs.isEmpty()) "OK (all deps are Android NDK/Bionic)" else "WARNING — non-standard deps: $otherLibs"}")
+        // Classify deps — jellyfin-ffmpeg uses libg_*.so (patched glibc names)
+        val knownGlibcNames = setOf("libg_libc.so","libg_m.so","libg_dl.so","libg_pthread.so",
+            "libc.so","libm.so","libdl.so","libpthread.so","libz.so")
+        val unknownLibs = neededLibs.filterNot { it in knownGlibcNames }
+        logAndNotify("$label glibc/bionic compatibility: ${if (unknownLibs.isEmpty()) "OK (only basic C runtime deps)" else "WARNING — unexpected deps: $unknownLibs"}")
 
         // Execute with the correct environment
         var versionLine = ""
