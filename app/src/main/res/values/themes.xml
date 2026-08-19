@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme - extends Material3 for Compose compatibility -->
+    <style name="Theme.JellyfinServer" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">#FF121212</item>
+        <item name="android:statusBarColor">#FF121212</item>
+        <item name="android:navigationBarColor">#FF121212</item>
+    </style>
+</resources>

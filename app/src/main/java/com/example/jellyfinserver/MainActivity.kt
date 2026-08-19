@@ -158,12 +158,13 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getWifiIpAddress(context: Context): String {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        val ip = wifiManager.connectionInfo.ipAddress
-        return if (ip == 0) {
+        return try {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            @Suppress("DEPRECATION")
+            val ip = wifiManager.connectionInfo.ipAddress
+            if (ip == 0) "127.0.0.1" else Formatter.formatIpAddress(ip)
+        } catch (e: Exception) {
             "127.0.0.1"
-        } else {
-            Formatter.formatIpAddress(ip)
         }
     }
 }
