@@ -271,6 +271,9 @@ class JellyfinService : Service() {
                 logAndNotify("target RID: linux-arm64")
                 logAndNotify("deployment model: self-contained")
 
+                // Run diagnostic check on ffmpeg to log any startup library/SELinux/SECCOMP issues
+                diagnoseFFmpeg(ffmpegPath.absolutePath)
+
                 logAndNotify("Starting Jellyfin process...")
 
                 val dataDir   = File(jellyfinHome, "data").also { it.mkdirs() }
@@ -415,6 +418,28 @@ class JellyfinService : Service() {
             }
         } catch (e: Exception) {
             logAndNotify("WARNING: Failed to auto-configure network.xml: ${e.message}")
+        }
+    }
+
+    private fun diagnoseFFmpeg(ffmpegPath: String) {
+        logAndNotify("Diagnosing ffmpeg launch at $ffmpegPath...")
+        try {
+            val process = ProcessBuilder(ffmpegPath, "-version")
+                .redirectErrorStream(true)
+                .start()
+            val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
+            var line: String?
+            var lineCount = 0
+            while (reader.readLine().also { line = it } != null) {
+                if (lineCount < 20) { // Limit output lines to avoid clobbering UI logs
+                    logAndNotify("  [ffmpeg] $line")
+                }
+                lineCount++
+            }
+            val exitCode = process.waitFor()
+            logAndNotify("ffmpeg exit code: $exitCode")
+        } catch (e: Exception) {
+            logAndNotify("ffmpeg execution failed: ${e.message}")
         }
     }
 
