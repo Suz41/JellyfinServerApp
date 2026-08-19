@@ -1,0 +1,26 @@
+<div is="emby-scroller" data-miniscrollbar="true" data-horizontal="false" data-focusscroll="true" class="actionSheetScroller-padding-inline">
+    <div class="actionsheetScrollSlider actionSheetScroller-padding-top actionSheetScroller-padding-bottom scrollSlider flex flex-direction-row">
+
+        <div class="ebook-input-composite flex-grow">
+
+            <input is="emby-input" class="ebookSearchField" />
+
+            <div class="emby-composite-input-buttons">
+                <button type="button" is="emby-button" class="ebookMatchCase paper-icon-button-light ebook-composite-button md-icon" title="${MatchCase}" aria-label="${MatchCase}">&#xf6f1;</button>
+                <button type="button" is="emby-button" class="ebookMatchWord paper-icon-button-light ebook-composite-button md-icon" title="${MatchWord}" aria-label="${MatchWord}">&#xf6f0;</button>
+            </div>
+
+        </div>
+
+        <span class="ebookSearchResults"></span>
+
+        <button type="button" is="emby-button" class="ebookSearchPrevious paper-icon-button-light dialogHeaderButton emby-button-text" title="${Previous}" aria-label="${Previous}">
+            <i class="md-icon">&#xe5d8;</i></button>
+        
+        <button type="button" is="emby-button" class="ebookSearchNext paper-icon-button-light dialogHeaderButton emby-button-text" title="${Next}" aria-label="${Next}">
+            <i class="md-icon">&#xe5db;</i></button>
+
+        <button type="button" is="emby-dialogclosebutton" closetype="done" class="ebookSearchClose"></button>
+
+    </div>
+</div>

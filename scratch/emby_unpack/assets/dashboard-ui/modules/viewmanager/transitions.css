@@ -1,0 +1,199 @@
+@-webkit-keyframes slide-from-left {
+    from {
+        -webkit-transform: translateX(-25%);
+        transform: translateX(-25%);
+    }
+}
+
+@keyframes slide-from-left {
+    from {
+        -webkit-transform: translateX(-25%);
+        transform: translateX(-25%);
+    }
+}
+
+@-webkit-keyframes slide-from-right {
+    from {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}
+
+@keyframes slide-from-right {
+    from {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}
+
+@-webkit-keyframes slide-to-left {
+    to {
+        -webkit-transform: translateX(-25%);
+        transform: translateX(-25%);
+    }
+}
+
+@keyframes slide-to-left {
+    to {
+        -webkit-transform: translateX(-25%);
+        transform: translateX(-25%);
+    }
+}
+
+@-webkit-keyframes slide-to-right {
+    to {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}
+
+@keyframes slide-to-right {
+    to {
+        -webkit-transform: translateX(100%);
+        transform: translateX(100%);
+    }
+}
+
+@-webkit-keyframes view-scale-up {
+    from {
+        scale: .9;
+        opacity: 0;
+    }
+}
+
+@keyframes view-scale-up {
+    from {
+        scale: .9;
+        opacity: 0;
+    }
+}
+
+@-webkit-keyframes view-scale-down {
+    to {
+        scale: .9;
+        opacity: 0;
+    }
+}
+
+@keyframes view-scale-down {
+    to {
+        scale: .9;
+        opacity: 0;
+    }
+}
+
+@-webkit-keyframes view-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes view-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@-webkit-keyframes view-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes view-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+.skinHeader {
+    view-transition-name: header-transition;
+}
+
+.mainDrawer {
+    view-transition-name: drawer-transition;
+}
+
+.appfooter {
+    view-transition-name: footer-transition;
+}
+
+.animatedView {
+    view-transition-class: animatedview;
+}
+
+html:active-view-transition-type(slide-forwards) {
+    &::view-transition-old(.animatedview)
+
+{
+    -webkit-animation: 200ms ease-out both slide-to-left;
+    animation: 200ms ease-out both slide-to-left;
+    mix-blend-mode: normal;
+    z-index: 1;
+}
+
+&::view-transition-new(.animatedview) {
+    -webkit-animation: 300ms ease-out both slide-from-right;
+    animation: 300ms ease-out both slide-from-right;
+    mix-blend-mode: normal;
+    z-index: 2;
+}
+
+}
+
+html:active-view-transition-type(slide-backwards) {
+    &::view-transition-old(.animatedview)
+
+{
+    -webkit-animation: 200ms ease-out both slide-to-right;
+    animation: 200ms ease-out both slide-to-right;
+    mix-blend-mode: normal;
+    z-index: 1;
+}
+
+&::view-transition-new(.animatedview) {
+    -webkit-animation: 300ms ease-out both slide-from-left;
+    animation: 300ms ease-out both slide-from-left;
+    mix-blend-mode: normal;
+    z-index: 2;
+}
+
+}
+
+html:active-view-transition-type(scale-forwards) {
+    &::view-transition-old(.animatedview)
+
+{
+    -webkit-animation: 400ms ease-out both view-scale-down;
+    animation: 400ms ease-out both view-scale-down;
+    mix-blend-mode: normal;
+    z-index: 1;
+}
+
+&::view-transition-new(.animatedview) {
+    -webkit-animation: 400ms ease-out both view-scale-up;
+    animation: 400ms ease-out both view-scale-up;
+    mix-blend-mode: normal;
+    z-index: 2;
+}
+
+}
+
+html:active-view-transition-type(scale-backwards) {
+    &::view-transition-old(.animatedview)
+
+{
+    -webkit-animation: 400ms ease-out both view-scale-down;
+    animation: 400ms ease-out both view-scale-down;
+    mix-blend-mode: normal;
+    z-index: 1;
+}
+
+&::view-transition-new(.animatedview) {
+    -webkit-animation: 400ms ease-out both view-scale-up;
+    animation: 400ms ease-out both view-scale-up;
+    mix-blend-mode: normal;
+    z-index: 2;
+}
+
+}

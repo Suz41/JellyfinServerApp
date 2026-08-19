@@ -1,0 +1,38 @@
+﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="devicesUploadForm auto-center fieldsets padded-top">
+
+            <div class="fieldsets-item">
+                <div>${HeaderCameraUploadHelp}</div>
+                <div is="emby-premierecontainer" class="premiereInfo"></div>
+            </div>
+
+            <fieldset>
+                <div class="fieldset-fields">
+                    <div class="inputContainer fieldset-field">
+                        <div class="flex align-items-center">
+                            <div class="flex-grow">
+                                <input is="emby-input" class="txtUploadPath" label="${LabelCameraUploadPath}" autocomplete="off" />
+                            </div>
+                            <button type="button" is="paper-icon-button-light" title="${ButtonSelectDirectory}" aria-label="${ButtonSelectDirectory}" class="btnSelectUploadPath emby-input-iconbutton"><i class="md-icon">search</i></button>
+                        </div>
+                        <div class="fieldDescription">${DefaultCameraUploadPathHelp}</div>
+                    </div>
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkSubfolder" />
+                            <span>${LabelCreateCameraUploadSubfolder}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${LabelCreateCameraUploadSubfolderHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+            <div>
+                <button is="emby-button" type="submit" class="raised button-submit block">
+                    <span>${Save}</span>
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>

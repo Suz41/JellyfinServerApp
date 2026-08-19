@@ -1,0 +1,70 @@
+﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="auto-center fieldsets padded-top">
+
+            <fieldset>
+
+                <legend class="typeName" style="margin-bottom:0;"></legend>
+
+                <button is="emby-button" type="button" class="raised button-cancel block btnDetect hide" style="margin-bottom:2em;">${HeaderDetectMyDevices}</button>
+
+                <div class="fieldset-fields">
+                    <div class="inputContainer fldFriendlyName hide fieldset-field">
+                        <input is="emby-input" type="text" class="txtFriendlyName" label="${LabelFriendlyName}" autocomplete="off" />
+                    </div>
+
+                    <div class="inputContainer fldPath hide fieldset-field">
+                        <div class="flex align-items-center">
+                            <div class="flex-grow">
+                                <input is="emby-input" type="text" class="txtDevicePath" label="${LabelFileOrUrl}" required="required" autocomplete="off" />
+                            </div>
+                            <button type="button" is="paper-icon-button-light" class="btnSelectPath hide emby-input-iconbutton"><i class="md-icon">search</i></button>
+                        </div>
+                    </div>
+
+                    <div class="inputContainer fldUserAgent fieldset-field">
+                        <input is="emby-input" type="text" class="txtUserAgent" label="${LabelUserAgentHeader}" autocomplete="off" />
+                        <div class="fieldDescription">${SupplyCustomValueIfNeeded}</div>
+                    </div>
+
+                    <div class="inputContainer fldReferrer fieldset-field">
+                        <input is="emby-input" type="text" class="txtReferrer" label="${LabelReferrerHeader}" autocomplete="off" />
+                        <div class="fieldDescription">${SupplyCustomValueIfNeeded}</div>
+                    </div>
+
+                    <div class="inputContainer fldTunerCount hide fieldset-field">
+                        <input is="emby-input" type="number" inputmode="numeric" required="required" min="0" step="1" class="txtTunerCount" label="${LabelSimultaneousConnectionLimit}" autocomplete="off" value="0" />
+                        <div class="fieldDescription">${SimultaneousConnectionLimitHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer fldFavorites hide fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkFavorite" />
+                            <span>${LabelImportOnlyFavoriteChannels}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${ImportFavoriteChannelsHelp}</div>
+                    </div>
+                    <div class="toggleContainer fldTranscode hide fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkTranscode" />
+                            <span>${LabelAllowHWTranscoding}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${AllowHWTranscodingHelp}</div>
+                    </div>
+                </div>
+                <p class="drmMessage hide fieldDescription fieldset-fields-fieldDescription">${DrmChannelsNotImported}</p>
+            </fieldset>
+
+
+            <div>
+                <input type="hidden" class="fldDeviceId" />
+                <button is="emby-button" type="submit" class="raised button-submit block">
+                    <span class="saveButtonText"></span>
+                </button>
+                <button is="emby-button" type="button" class="raised button-cancel block btnCancel">
+                    <span>${Cancel}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

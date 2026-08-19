@@ -1,0 +1,78 @@
+<div class="formDialogHeader">
+    <button class="ebookDialogCloseButton" type="button" is="emby-dialogclosebutton" closetype="done"></button>
+
+    <h3 class="ebookDialogHeaderTitle formDialogHeaderTitle withEllipsis fluidHeaderItem"></h3>
+
+    <div class="ebookDialogHeaderSpacer"></div>
+
+    <div class="ebookControls">
+
+        <div class="eBookSelection hide">
+            <button type="button" class="ebook-selection autortl dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" data-fluid-priority="2" title="${Selection}" aria-label="${Selection}">&#xf73e;</button>
+        </div>
+
+        <div class="eBookSearchBtn hide">
+            <button type="button" class="ebook-search separatedAfter dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" title="${FindInBook}" aria-label="${FindInBook}">&#xe880;</button>
+        </div>
+
+        <button type="button" class="ebook-textsize dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" title="${LabelTextSize}" aria-label="${LabelTextSize}">&#xe245;</button>
+        <button type="button" class="ebook-pagesize separatedAfter dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" title="${LabelPageSize}" aria-label="${LabelPageSize}">&#xf779;</button>
+
+        <button type="button" class="ebook-prevsection autortl dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" data-fluid-priority="3" title="${PreviousSection}" aria-label="${PreviousSection}">&#xe045;</button>
+        <button type="button" class="ebook-previous autortl dialogHeaderButton md-icon paper-icon-button-light" title="${PreviousPage}" aria-label="${PreviousPage}">&#xe5cb;</button>
+
+        <div class="ebookPercentage ebook-progress">
+            <div class="position progress-number" title="${PositionInBook}" aria-label="${PositionInBook}"></div>
+            <div class="progress-text">%</div>
+        </div>
+
+        <div class="ebookPages ebook-progress hide">
+            <input type="text" is="emby-input" class="page-input" maxlength="4" title="${CurrentPage}" aria-label="${CurrentPage}">
+            <div class="progress-text">/</div>
+            <div class="total progress-number" title="${TotalPages}" aria-label="${TotalPages}"></div>
+        </div>
+
+        <button type="button" class="ebook-next autortl dialogHeaderButton md-icon paper-icon-button-light" title="${NextPage}" aria-label="${NextPage}">&#xe5cc;</button>
+        <button type="button" class="ebook-nextsection autortl dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" title="${NextSection}" aria-label="${NextSection}">&#xe044;</button>
+
+    </div>
+
+    <button type="button" class="ebook-toc dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" data-fluid-priority="-1" title="${TableOfContents}" aria-label="${TableOfContents}">&#xe8de;</button>
+
+    <button type="button" class="ebook-more separatedBefore dialogHeaderButton fluidHeaderMore paper-icon-button-light md-icon" title="${More}" aria-label="${More}">&#xe5d3;</button>
+
+    <div class="ebookSearchAnchor"></div>
+
+</div>
+
+<div class="formDialogContent ebookDialogContent">
+
+    <div class="ebookBackgroundPaginator">
+        <div class="paginatorFlexContainer">
+            <a class="previousTarget"></a>
+            <a class="nextTarget"></a>
+        </div>
+    </div>
+    
+    <div class="ebookContainer scrollY">
+        <div class="ebookContent"></div>
+    </div>
+
+    <div class="ebookOverlayScroller dialog-scrollY scrollY overflowYScroll">
+        <div class="ebookOverlayScrollerFiller"></div>
+    </div>
+
+    <div class="ebookOverlayPaginator scrollY">
+        <div class="paginatorFlexContainer">
+            <a class="resizeTarget">
+                <i class="md-icon resizeTargetHandle">&#xe945;</i>
+            </a>
+            <a class="previousTarget"></a>
+            <a class="nextTarget"></a>
+        </div>
+    </div>
+
+    <div class="ebookTocDrawer focuscontainer padded-bottom-page">
+    </div>
+
+</div>

@@ -1,0 +1,1 @@
+globalThis.Intl||(globalThis.Intl={}),Intl.DisplayNames||(Intl.DisplayNames=function(locales,options){this.options=options||{},this.locales=Array.isArray(locales)?locales:[locales]},Intl.DisplayNames.prototype.of=function(value){var _this$options;return"none"===(null==(_this$options=this.options)?void 0:_this$options.fallback)?null:value});

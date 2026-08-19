@@ -1,0 +1,22 @@
+﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="deviceForm auto-center fieldsets">
+
+            <fieldset>
+                <legend class="reportedName">
+
+                </legend>
+                <div class="fieldset-fields">
+                    <div class="inputContainer fieldset-field">
+                        <input is="emby-input" type="text" class="txtCustomName" label="${LabelDisplayName}" />
+                        <div class="fieldDescription">${LabelCustomDeviceDisplayNameHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div>
+                <button is="emby-button" type="submit" class="raised button-submit block"><span>${Save}</span></button>
+            </div>
+        </form>
+    </div>
+</div>

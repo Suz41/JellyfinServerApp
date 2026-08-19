@@ -1,0 +1,49 @@
+<div class="formDialogHeader">
+    <button type="button" is="emby-dialogclosebutton"></button>
+    <h3 class="formDialogHeaderTitle">
+        ${HeaderCopyDataToUsers}
+    </h3>
+</div>
+
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <div class="scrollSlider">
+        <form class="dialogContentInner dialog-content-centered padded-left padded-right fieldsets">
+
+            <fieldset>
+                <legend class="hide">${Users}</legend>
+
+                <div class="fieldset-fields">
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectUsers" label="${Users}" data-autoallany="false" data-empty-is-all="false" multiple required>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="copyOptionsContainer">
+
+                <legend>${HeaderCopyOptions}</legend>
+                <div class="fieldset-fields fieldset-fields-listitems">
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserPolicy" checked />
+                        <span>${UserPolicy}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserConfiguration" checked />
+                        <span>${UserConfiguration}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field fldCopyUserData">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserData" />
+                        <span>${UserDataAndDescription}</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="formDialogFooter">
+                <button is="emby-button" type="submit" class="raised button-submit block btnSubmit formDialogFooterItem">
+                    ${HeaderCopyDataToUsers}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

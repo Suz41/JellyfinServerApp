@@ -1,0 +1,460 @@
+﻿<fieldset class="additionalFolderOptionsSection hide">
+    <div class="fieldset-fields">
+        <div class="selectContainer fieldset-field fldselectMusicFolderStructure">
+            <select is="emby-select" class="selectMusicFolderStructure" label="${LabelMusicFolderStructure}">
+                <option value="">${OtherOrUnstructured}</option>
+                <option class="selectMusicFolderStructure_artist_album_track" value="artist_album_track">${PerfectArtistAlbumTrack}</option>
+                <option class="selectMusicFolderStructure_album_track" value="album_track">${PerfectAlbumTrack}</option>
+            </select>
+            <div class="fieldDescription">${LabelMusicFolderStructureHelp}</div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend>${HeaderLibrarySettings}</legend>
+
+    <div class="fieldset-fields">
+        <div class="selectContainer fldMetadataLanguage hide fieldset-field">
+            <select is="emby-select" class="selectLanguage" label="${LabelMetadataDownloadLanguage}"></select>
+        </div>
+        <div class="selectContainer fldMetadataCountry hide fieldset-field">
+            <select is="emby-select" class="selectCountry" label="${LabelCertificationCountry}"></select>
+            <div class="fieldDescription">${CertificationCountryHelp}</div>
+        </div>
+        <div class="selectContainer fldImageLanguage hide fieldset-field">
+            <select is="emby-select" class="selectImageLanguage" label="${LabelImageDownloadLanguage}"></select>
+        </div>
+        <div class="toggleContainer chkEnablePhotosContainer fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkEnablePhotos" checked />
+                <span>${EnablePhotos}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${EnablePhotosHelp}</div>
+        </div>
+        <div class="toggleContainer fldImportPlaylists fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkImportPlaylists" checked />
+                <span>${ImportPlaylists}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${ImportPlaylistsHelp}</div>
+        </div>
+
+        <div class="toggleContainer chkEnableEmbeddedTitlesContainer hide advanced fieldset-field">
+            <label>
+                <input is="emby-toggle" type="checkbox" class="chkEnableEmbeddedTitles" />
+                <span>${PreferEmbeddedTitlesOverFileNames}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${PreferEmbeddedTitlesOverFileNamesHelp}</div>
+        </div>
+
+        <div class="toggleContainer fldRealtimeMonitor hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkEnableRealtimeMonitor" checked />
+                <span>${LabelEnableRealtimeMonitor}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${LabelEnableRealtimeMonitorHelp}</div>
+        </div>
+
+        <div class="toggleContainer fldExcludeFromSearch hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkExcludeFromSearch" />
+                <span>${ExcludeFromGlobalSearch}</span>
+            </label>
+        </div>
+
+        <div class="toggleContainer fieldset-field fldMergeFolders hide">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkMergeFoldersInFolderView" />
+                <span>${MergeTopFoldersInFolderView}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${MergeTopFoldersInFolderViewHelp}</div>
+        </div>
+
+        <div class="selectContainer fldFolderScanMode hide fieldset-field">
+            <select is="emby-select" class="selectFolderScanMode" label="${LabelFolderScanningMode}" data-menu="custom">
+                <option value="">${Default}</option>
+                <option value="legacy" data-description="${LegacyFolderScanningModeHelp}">${Legacy}</option>
+            </select>
+            <div class="fieldDescription">${FolderScanningModeHelp}</div>
+        </div>
+
+        <div class="toggleContainer hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkEnableAudioResume" />
+                <span>${LabelEnableRealtimeMonitor}</span>
+            </label>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="ignoreSection hide">
+    <legend>${HeaderIgnoreFiles}</legend>
+
+    <div class="fieldset-fields">
+        <div class="inputContainer fldIgnoreSample hide fieldset-field">
+            <div class="flex align-items-center">
+                <div class="flex-grow">
+                    <input is="emby-input" type="number" class="txtIgnoreSampleFiles flex-grow" name="txtIgnoreSampleFiles" inputmode="numeric" min="0" value="300" label="${LabelIgnoreSampleFiles}" />
+                </div>
+                <div class="align-self-flex-end" style="margin-inline-start:.35em;margin-bottom: .25em;">MB</div>
+            </div>
+        </div>
+
+        <div class="toggleContainer fldEnablePlexIgnore hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkEnablePlexIgnore" checked />
+                <span>${EnablePlexIgnoreAlias}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">
+                <a is="emby-linkbutton" class="button-link" href="https://emby.media/support/articles/Excluding-Files-Folders.html" target="_blank">${LearnMore}</a>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="groupingSection hide">
+    <legend>${HeaderAutomaticGrouping}</legend>
+    <div class="fieldset-fields">
+
+        <div class="toggleContainer chkAutomaticallyGroupSeriesContainer hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkAutomaticallyGroupSeries" checked />
+                <span>${OptionAutomaticallyGroupSeries}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${OptionAutomaticallyGroupSeriesHelp}</div>
+        </div>
+
+        <div class="toggleContainer hide fieldset-field fldMultiPart">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkEnableMultiPart" checked />
+                <span>${LabelEnableMultiPartItems}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${EnableMultiPartItemsHelp}</div>
+            <div class="fieldDescription toggleFieldDescription fldMultiPartTVHelp hide">${EnableMultiPartItemsTVHelp}</div>
+            <div class="fieldDescription toggleFieldDescription">
+                <a is="emby-linkbutton" class="button-link" href="https://emby.media/support/articles/Movie-Naming.html#split-video-files-file-stacking" target="_blank">${LearnMore}</a>
+            </div>
+        </div>
+
+        <div class="selectContainer fldMultiVersion hide fieldset-field">
+            <select is="emby-select" class="selectMultiVersionGrouping" label="${LabelMultiVersionItemsDetection}">
+                <option value="both" class="hide" selected>${MultiVersionItemsDetectionBoth}</option>
+                <option value="files">${MultiVersionItemsDetectionFiles}</option>
+                <option value="metadata" class="hide">${MultiVersionItemsDetectionMetadata}</option>
+                <option value="none">${None}</option>
+            </select>
+            <div class="fieldDescription toggleFieldDescription">${MultiVersionItemsDetectionHelp}</div>
+            <div class="fieldDescription toggleFieldDescription hide MultiVersionMoviesDetectionHelp">${MultiVersionMoviesDetectionHelp}</div>
+            <div class="fieldDescription">
+                <a is="emby-linkbutton" class="button-link" href="https://emby.media/support/articles/Movie-Naming.html#multi-version-movies" target="_blank">${LearnMore}</a>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="metadataReaders hide">
+    <legend>${HeaderMetadataReaders}</legend>
+    <p class="legendDescription">${LabelMetadataReadersHelp}</p>
+    <div class="fieldset-fields fieldset-fields-fieldmargins itemsContainer metadataReaderItemsContainer" is="emby-itemscontainer">
+
+    </div>
+</fieldset>
+
+<div class="metadataFetchers hide fieldsets">
+</div>
+
+<fieldset class="importCollectionsSection hide">
+
+    <legend>${Collections}</legend>
+
+    <div class="fieldset-fields">
+        <div class="toggleContainer fldImportCollections hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkImportCollections" />
+                <span>${LabelImportCollections}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${LabelImportCollectionsHelp}</div>
+        </div>
+
+        <div class="selectContainer fldMinCollectionSize hide fieldset-field">
+            <select is="emby-select" class="selectMinCollectionSize" label="${LabelMinCollectionSize}">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+            <div class="fieldDescription">${MinCollectionSizeHelp}</div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset>
+
+    <div class="fieldset-fields">
+        <div class="toggleContainer fldAdult hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkAdult" />
+                <span>${LabelAllowAdultMetadata}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${LabelAllowAdultMetadataHelp}</div>
+        </div>
+
+        <div class="selectContainer fldAutoRefreshInterval hide fieldset-field">
+            <select is="emby-select" class="selectAutoRefreshInterval" label="${LabelAutomaticallyRefreshInternetMetadataEvery}"></select>
+            <div class="fieldDescription">${MessageEnablingOptionLongerScans}</div>
+        </div>
+        <div class="selectContainer fldPlaceholderMetadataRefreshInterval hide fieldset-field">
+            <select is="emby-select" class="selectPlaceholderMetadataRefreshInterval" label="${LabelPlaceholderMetadataRefreshInternetMetadataEvery}"></select>
+            <div class="fieldDescription">${MessageEnablingOptionLongerScans}</div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="metadataSavers hide">
+    <legend>${HeaderMetadataSavers}</legend>
+    <div class="fieldset-fields fieldset-fields-fieldmargins metadataSaversList">
+
+    </div>
+    <div class="fieldset-fields-fieldDescription fieldDescription">${LabelMetadataSaversHelp}</div>
+</fieldset>
+<div class="imageFetchers hide fieldsets">
+</div>
+
+<fieldset>
+
+    <div class="fieldset-fields">
+        <div class="toggleContainer chkSaveLocalContainer hide fieldset-field">
+            <label>
+                <input is="emby-toggle" type="checkbox" class="chkSaveLocal" />
+                <span>${LabelSaveLocalMetadata}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${LabelSaveLocalMetadataHelp}</div>
+        </div>
+        <div class="toggleContainer fldCacheImages hide fieldset-field">
+            <label>
+                <input is="emby-toggle" type="checkbox" class="chkCacheImages" />
+                <span>${CacheImagesInServerData}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${CacheImagesInServerDataHelp}</div>
+        </div>
+
+        <div class="toggleContainer fldSaveMetadataHidden hide advanced fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkSaveMetadataHidden" />
+                <span>${OptionSaveMetadataAsHidden}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${OptionSaveMetadataAsHiddenHelp}</div>
+        </div>
+
+        <div class="toggleContainer hide chkDownloadImagesInAdvanceContainer advanced fieldset-field">
+            <label>
+                <input is="emby-toggle" type="checkbox" class="chkDownloadImagesInAdvance" />
+                <span>${OptionDownloadImagesInAdvance}</span>
+            </label>
+            <div class="fieldDescription toggleFieldDescription">${OptionDownloadImagesInAdvanceHelp}</div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="chaptersSection hide">
+    <legend>${Chapters}</legend>
+
+    <div class="fieldset-fields">
+        <div class="toggleContainer fldGenerateChapters hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkGenerateChapters" checked />
+                <span>${GenerateChaptersForVideos}</span>
+            </label>
+        </div>
+
+        <div class="selectContainer fldChapterInterval hide fieldset-field">
+            <label>
+                <select is="emby-select" class="selectChapterInterval" label="${GeneratedChapterInterval}"></select>
+            </label>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="thumbnailSettingsSection hide">
+    <legend>${HeaderVideoPreviewThumbnails}</legend>
+
+    <div class="fieldset-fields">
+        <div class="selectContainer fieldset-field">
+            <select is="emby-select" class="selectThumbnailImages" label="${LabelGenerateVideoPreviewThumbnails}">
+                <option value="">${Never}</option>
+                <option value="task">${AsAScheduledTask}</option>
+                <option value="scanandtask">${AsAScheduledTaskAndMediaAdded}</option>
+            </select>
+            <div class="fieldDescription">${GenerateVideoPreviewThumbnailsHelp}</div>
+        </div>
+
+        <div class="selectContainer fldThumbnailInterval hide fieldset-field">
+            <label>
+                <select is="emby-select" class="selectThumbnailInterval" label="${LabelThumbnailImagesInterval}"></select>
+            </label>
+            <div class="fieldDescription">${ThumbnailImagesIntervalHelp}</div>
+        </div>
+
+        <div class="toggleContainer fldSaveThumbnailSetsLocally hide fieldset-field">
+            <label>
+                <input type="checkbox" is="emby-toggle" class="chkLocalThumbnailSets" />
+                <span>${SaveThumbnailImagesIntoMediaFolders}</span>
+            </label>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="introDetectionSection hide">
+    <legend>${Markers}</legend>
+
+    <div class="fieldset-fields">
+        <div class="selectContainer fieldset-field">
+            <select is="emby-select" class="selectIntroDetection" label="${LabelGenerateIntroVideoMarkers}">
+                <option value="">${Never}</option>
+                <option value="task">${AsAScheduledTask}</option>
+                <option value="scanandtask">${AsAScheduledTaskAndMediaAdded}</option>
+            </select>
+            <div class="fieldDescription">${GenerateIntroVideoMarkersHelp}</div>
+        </div>
+    </div>
+</fieldset>
+
+<div class="subtitleDownloadSettings hide fieldsets">
+
+    <fieldset>
+        <legend>
+            ${HeaderSubtitleDownloaders}
+        </legend>
+        <p class="legendDescription">${SubtitleDownloadersHelp}</p>
+
+        <div class="itemsContainer subtitleFetchersItemsContainer fieldset-fields fieldset-fields-fieldmargins" is="emby-itemscontainer">
+
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>${HeaderAutomaticSubtitleDownloads}</legend>
+
+        <div class="fieldset-fields">
+            <div class="selectContainer fieldset-field">
+                <label>
+                    <select is="emby-select" class="selectSubtitleLanguages" label="${HeaderDownloadLanguages}" data-autoallany="false" data-empty-is-all="false" multiple></select>
+                </label>
+            </div>
+
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input is="emby-toggle" type="checkbox" class="chkRequireHashMatch" checked />
+                    <span>${RequireHashMatch}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${RequireHashMatchHelp}</div>
+            </div>
+
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input is="emby-toggle" type="checkbox" class="chkForcedSubtitlesOnly" checked />
+                    <span>${SearchForForcedSubtitlesOnly}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${SearchForForcedSubtitlesOnlyHelp}</div>
+            </div>
+
+            <div class="selectContainer fldSubtitleDownloadMaxAge fieldset-field">
+                <label>
+                    <select is="emby-select" class="selectSubtitleDownloadMaxAge" label="${LabelSubtitleDownloadMaxAge}"></select>
+                </label>
+                <div class="fieldDescription">${SubtitleDownloadMaxAgeHelp}</div>
+            </div>
+
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input is="emby-toggle" type="checkbox" class="chkSkipIfAudioTrackPresent" />
+                    <span>${LabelSkipIfAudioTrackPresent}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${LabelSkipIfAudioTrackPresentHelp}</div>
+            </div>
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input is="emby-toggle" type="checkbox" class="chkSkipIfGraphicalSubsPresent" />
+                    <span>${LabelSkipIfGraphicalSubsPresent}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${LabelSkipIfGraphicalSubsPresentHelp}</div>
+            </div>
+
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input type="checkbox" is="emby-toggle" class="chkSaveSubtitlesLocally" checked />
+                    <span>${SaveSubtitlesIntoMediaFolders}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${SaveSubtitlesIntoMediaFoldersHelp}</div>
+            </div>
+        </div>
+    </fieldset>
+
+</div>
+
+<div class="lyricsDownloadSettings hide fieldsets">
+
+    <fieldset>
+        <legend>
+            ${HeaderSubtitleDownloaders}
+        </legend>
+        <p class="legendDescription">${SubtitleDownloadersHelp}</p>
+
+        <div class="itemsContainer lyricsFetchersItemsContainer fieldset-fields fieldset-fields-fieldmargins" is="emby-itemscontainer">
+
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>${HeaderAutomaticSubtitleDownloads}</legend>
+
+        <div class="fieldset-fields">
+            <div class="selectContainer fieldset-field">
+                <label>
+                    <select is="emby-select" class="selectLyricsLanguages" label="${HeaderDownloadLanguages}" data-autoallany="false" data-empty-is-all="false" multiple></select>
+                </label>
+            </div>
+            <div class="selectContainer fldLyricsDownloadMaxAge fieldset-field">
+                <label>
+                    <select is="emby-select" class="selectLyricsDownloadMaxAge" label="${LabelLyricsDownloadMaxAge}"></select>
+                </label>
+                <div class="fieldDescription">${LyricsDownloadMaxAgeHelp}</div>
+            </div>
+
+            <div class="toggleContainer fieldset-field">
+                <label>
+                    <input type="checkbox" is="emby-toggle" class="chkSaveLyricsLocally" checked />
+                    <span>${SaveLyricsIntoMediaFolders}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${SaveLyricsIntoMediaFoldersHelp}</div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+
+<fieldset class="playbackSettings hide">
+
+    <legend>${Playback}</legend>
+
+    <div class="fieldset-fields">
+        <div class="inputContainer fieldset-field">
+            <input is="emby-input" type="number" class="txtMinResumePct" name="txtMinResumePct" inputmode="numeric" required min="0" max="100" label="${LabelMinResumePercentage}" value="3" />
+            <div class="fieldDescription">
+                ${LabelMinResumePercentageHelp}
+            </div>
+        </div>
+        <div class="inputContainer fieldset-field">
+            <input is="emby-input" type="number" class="txtMaxResumePct" name="txtMaxResumePct" inputmode="numeric" required min="1" max="100" label="${LabelMaxResumePercentage}" value="90" />
+            <div class="fieldDescription">
+                ${LabelMaxResumePercentageHelp}
+            </div>
+        </div>
+        <div class="inputContainer fieldset-field">
+            <input is="emby-input" type="number" class="txtMinResumeDuration" name="txtMinResumeDuration" inputmode="numeric" required min="0" label="${LabelMinResumeDuration}" value="120" />
+            <div class="fieldDescription">
+                ${LabelMinResumeDurationHelp}
+            </div>
+        </div>
+    </div>
+</fieldset>

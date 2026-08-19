@@ -1,0 +1,480 @@
+﻿<div class="view flex flex-direction-column withTabs">
+
+    <div class="tabContent tabContent-positioned flex flex-grow" data-index="0">
+        <div is="emby-scroller" data-horizontal="false" data-focusscroll="true" data-navcommands="card" data-forcescrollbar="true" class="scrollFrameY flex flex-grow" data-bindheader="true">
+
+            <div class="scrollSlider flex-grow padded-top-page padded-left padded-right">
+
+                <div class="readOnlyContent auto-center padded-bottom-page">
+
+                    <form class="editUserProfileForm fieldsets">
+
+                        <div class="disabledUserBanner infoBanner hide">
+                            ${HeaderThisUserIsCurrentlyDisabled}
+                        </div>
+                        <p class="lnkEditUserPreferencesContainer fieldsets-item">
+                            <a class="lnkEditUserPreferences button-link" href="#" is="emby-linkbutton">${ButtonEditOtherUserPreferences}</a>
+                        </p>
+
+
+                        <fieldset>
+                            <div class="fieldset-fields">
+                                <div class="fldUserName inputContainer fieldset-field">
+                                    <input is="emby-input" class="txtUserName" required type="text" label="${LabelName}" />
+                                    <div class="fieldDescription">${NewUserNameHelp}</div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <legend class="hide">${HeaderEmbyConnect}</legend>
+                            <div class="fieldset-fields">
+                                <div class="inputContainer fieldset-field">
+                                    <input is="emby-input" class="txtConnectUserName" type="text" label="${LabelConnectEmail}" />
+                                    <div class="fieldDescription">
+                                        <div>${LabelConnectEmailHelp}</div>
+                                        <div style="margin-top: .75em;">
+                                            <a is="emby-linkbutton" class="button-link" href="https://emby.media/connect" target="_blank">${ButtonLearnMoreAboutEmbyConnect}</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <div class="fieldset-fields">
+                                <div class="selectContainer fldSelectLoginProvider hide fieldset-field">
+                                    <select class="selectLoginProvider" is="emby-select" label="${LabelAuthProvider}"></select>
+                                    <div class="fieldDescription">${AuthProviderHelp}</div>
+                                </div>
+                                <div class="toggleContainer fldRemoteAccess hide fieldset-field">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkRemoteAccess" />
+                                        <span>${AllowRemoteAccess}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${AllowRemoteAccessHelp}</div>
+                                </div>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkIsAdmin" />
+                                    <span>${OptionAllowUserToManageServer}</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <legend>${Playback}</legend>
+                            <div class="fieldset-fields">
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableMediaPlayback" />
+                                    <span>${OptionAllowMediaPlayback}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableAudioPlaybackTranscoding" />
+                                    <span>${OptionAllowAudioPlaybackTranscoding}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableVideoPlaybackTranscoding" />
+                                    <span>${OptionAllowVideoPlaybackTranscoding}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field fldAllowTranscodingQuality hide">
+                                    <input type="checkbox" is="emby-toggle" class="chkAllowTranscodingQuality" />
+                                    <span>${OptionAllowTranscodingToReduceQuality}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableVideoPlaybackRemuxing" />
+                                    <span>${OptionAllowVideoPlaybackRemuxing}</span>
+                                </label>
+                            </div>
+                            <div class="fieldDescription fieldset-fields-fieldDescription">${OptionAllowMediaPlaybackTranscodingHelp}</div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <div class="fieldset-fields">
+                                <div class="selectContainer fldStreamLimit fieldset-field">
+                                    <select is="emby-select" class="selectStreamLimit" label="${LabelSimultaneousStreamLimit}">
+                                    </select>
+                                    <div class="fieldDescription">${SimultaneousStreamLimitHelp}</div>
+                                    <div is="emby-premierecontainer" class="fieldDescription streamLimitPremiereInfo"></div>
+                                </div>
+
+                                <div class="inputContainer fieldset-field">
+                                    <input is="emby-input" type="number" class="txtRemoteClientBitrateLimit" inputmode="decimal" min="0" step=".25" label="${LabelRemoteClientBitrateLimit}" />
+                                    <div class="fieldDescription">${LabelRemoteClientBitrateLimitHelp}</div>
+                                    <div class="fieldDescription">${LabelUserRemoteClientBitrateLimitHelp}</div>
+                                </div>
+
+                                <div class="inputContainer fieldset-field fldAutoRemoteQuality hide">
+                                    <input is="emby-input" type="number" class="txtAutoRemoteQuality" inputmode="decimal" min="0" step=".25" max="200" label="${LabelAutoRemoteQuality}" />
+                                    <div class="fieldDescription">${AutoRemoteQualityHelp}</div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset class="featureAccessFields">
+                            <legend>${HeaderFeatureAccess}</legend>
+                            <div class="fieldset-fields fieldset-fields-listitems featureList">
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>${HeaderAllowMediaDeletionFrom}</legend>
+
+                            <div class="fieldset-fields fieldset-fields-listitems">
+                                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableDeleteAllFolders" />
+                                    <span>${All}</span>
+                                </label>
+                                <div class="deleteAccess fieldset-fields-nested fieldset-fields-listitems">
+                                </div>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <legend>${HeaderRemoteControl}</legend>
+                            <div class="fieldset-fields">
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableRemoteControlOtherUsers" />
+                                    <span>${OptionAllowRemoteControlOthers}</span>
+                                </label>
+                                <div class="toggleContainer fieldset-field">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkRemoteControlSharedDevices" />
+                                        <span>${OptionAllowRemoteSharedDevices}</span>
+                                    </label>
+                                    <div class="fieldDescription">${OptionAllowRemoteSharedDevicesHelp}</div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+
+                        <fieldset>
+                            <legend>${Downloads}</legend>
+                            <div class="fieldset-fields">
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableDownloading" />
+                                    <span>${OptionAllowContentDownloading}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableSyncTranscoding" />
+                                    <span>${OptionAllowSyncTranscoding}</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>${Subtitles}</legend>
+                            <div class="fieldset-fields">
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableSubtitleDownloading" />
+                                    <span>${AllowSubtitleDownloading}</span>
+                                </label>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableSubtitleManagement" />
+                                    <span>${AllowSubtitleManagement}</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <div class="fieldset-fields">
+                                <div class="toggleContainer fieldset-field fldAllowCameraUpload hide">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkAllowCameraUpload" />
+                                        <span>${AllowCameraUpload}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${AllowCameraUploadHelp}</div>
+                                </div>
+                                <div class="toggleContainer fieldset-field">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkEnableConversion" />
+                                        <span>${AllowMediaConversion}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${AllowMediaConversionHelp}</div>
+                                </div>
+                                <div class="toggleContainer fieldset-field fldSharePersonalContent hide">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkSharePersonalContent" />
+                                        <span>${AllowSharingPersonalContent}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${AllowSharingPersonalContentHelp}</div>
+                                </div>
+                                <div class="toggleContainer fieldset-field">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkEnableSharing" />
+                                        <span>${OptionAllowLinkSharing}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription sharingHelp"></div>
+                                </div>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkAllowChangeProfile" />
+                                    <span>${AllowChangingImageAndPassword}</span>
+                                </label>
+                                <div class="toggleContainer fieldset-field fldIsEnabled hide">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkDisabled" />
+                                        <span>${OptionDisableUser}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${OptionDisableUserHelp}</div>
+                                </div>
+                                <label class="toggleContainer fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkIsHidden" />
+                                    <span>${OptionHideUserLocal}</span>
+                                </label>
+                                <div class="toggleContainer fieldset-field">
+                                    <label>
+                                        <input type="checkbox" is="emby-toggle" class="chkIsHiddenRemotely" />
+                                        <span>${OptionHideUserRemote}</span>
+                                    </label>
+                                    <div class="fieldDescription toggleFieldDescription">${OptionHideUserFromLoginHelp}</div>
+                                </div>
+                                <label class="toggleContainer fieldset-field fldHideFromUnusedDevices">
+                                    <input type="checkbox" is="emby-toggle" class="chkHideFromUnusedDevices" />
+                                    <span>${HideFromUnusedDevices}</span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <div>
+                            <button is="emby-button" type="submit" class="raised button-submit block">
+                                <span>${Save}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabContent tabContent-positioned flex flex-grow" data-index="1">
+        <div is="emby-scroller" data-horizontal="false" data-focusscroll="true" data-navcommands="card" data-forcescrollbar="true" class="scrollFrameY flex flex-grow" data-bindheader="true">
+
+            <div class="scrollSlider flex-grow padded-top-page padded-left padded-right">
+
+                <div class="readOnlyContent auto-center padded-bottom-page">
+
+                    <form class="userLibraryAccessForm fieldsets" style="overflow:hidden;">
+
+                        <fieldset class="folderAccessContainer">
+                            <legend>${HeaderLibraryAccess}</legend>
+
+                            <div class="fieldset-fields fieldset-fields-listitems">
+                                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableAllFolders" />
+                                    <span>${OptionEnableAccessToAllLibraries}</span>
+                                </label>
+                                <div class="folderAccessListContainer folderAccess fieldset-fields-margin fieldset-fields-listitems">
+                                </div>
+                            </div>
+                            <div class="fieldDescription">${LibraryAccessHelp}</div>
+                        </fieldset>
+
+                        <fieldset class="channelAccessContainer hide">
+                            <legend>${HeaderChannelAccess}</legend>
+
+                            <div class="fieldset-fields fieldset-fields-listitems">
+                                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableAllChannels" />
+                                    <span>${All}</span>
+                                </label>
+                                <div class="channelAccess fieldset-fields-nested fieldset-fields-listitems">
+                                </div>
+                            </div>
+                            <div class="fieldDescription">${ChannelAccessHelp}</div>
+                        </fieldset>
+
+                        <fieldset class="deviceAccessContainer hide">
+                            <legend>${HeaderDeviceAccess}</legend>
+
+                            <div class="fieldset-fields fieldset-fields-listitems">
+                                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                                    <input type="checkbox" is="emby-toggle" class="chkEnableAllDevices" />
+                                    <span>${All}</span>
+                                </label>
+                                <div class="deviceAccess fieldset-fields-nested fieldset-fields-listitems">
+                                </div>
+                            </div>
+                            <div class="fieldDescription">${DeviceAccessHelp}</div>
+                        </fieldset>
+
+                        <div>
+                            <button is="emby-button" type="submit" class="raised button-submit block">
+                                <span>${Save}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tabContent tabContent-positioned flex flex-grow" data-index="2">
+        <div is="emby-scroller" data-horizontal="false" data-focusscroll="true" data-navcommands="card" data-forcescrollbar="true" class="scrollFrameY flex flex-grow" data-bindheader="true">
+
+            <div class="scrollSlider flex-grow padded-top-page padded-left padded-right">
+                <div class="readOnlyContent auto-center padded-bottom-page">
+
+                    <form class="userParentalControlForm padded-top fieldsets">
+
+
+                        <fieldset>
+                            <div class="fieldset-fields">
+                                <div class="selectContainer fieldset-field">
+                                    <select is="emby-select" class="selectMaxParentalRating" label="${LabelMaxParentalRating}"></select>
+                                    <div class="fieldDescription">${MaxParentalRatingHelp}</div>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="blockUnratedItems hide">
+                            <legend>${HeaderBlockItemsWithNoRating}</legend>
+                            <div class="fieldset-fields fieldset-fields-listitems blockUnratedItemsList">
+
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend class="legendWithContent">
+                                <div class="legendText">${LabelBlockContentWithTags}</div>
+                                <div class="legendActions">
+                                    <button is="emby-button" type="button" class="raised raised-mini btnAddBlockedTag submit sectionTitleButton">
+                                        <i class="md-icon button-icon button-icon button-icon-left">&#xe145;</i>
+                                        <span>${Add}</span>
+                                    </button>
+                                </div>
+                            </legend>
+                            <div class="fieldset-fields fieldset-fields-listitems fieldset-fields-fieldmargins blockedTags itemsContainer vertical-list" is="emby-itemscontainer">
+
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <div class="fieldset-fields" is="emby-itemscontainer">
+                                <div class="selectContainer fieldset-field">
+                                    <select is="emby-select" class="selectTagMode" label="${LabelTagRestrictionMode}">
+                                        <option value="" selected>${BlockItemsWithTheseTags}</option>
+                                        <option value="include">${AllowItemsWithTheseTags}</option>
+                                    </select>
+                                </div>
+
+                                <div class="selectContainer fldMultiRestrictionMode hide fieldset-field">
+                                    <select is="emby-select" class="selectMultiRestrictionMode" label="${LabelMultiRestrictionMode}">
+                                        <option value="all">${MultiRestrictionModeAll}</option>
+                                        <option value="any">${MultiRestrictionModeAny}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="accessScheduleSection hide">
+                            <legend class="hide">${HeaderAccessSchedule}</legend>
+                            <legend class="legendWithContent">
+                                <div class="legendText">${HeaderAccessSchedule}</div>
+                                <div class="legendActions">
+                                    <button is="emby-button" type="button" class="raised raised-mini btnAddSchedule submit sectionTitleButton">
+                                        <i class="md-icon button-icon button-icon button-icon-left">&#xe145;</i>
+                                        <span>${Add}</span>
+                                    </button>
+                                </div>
+                            </legend>
+                            <p class="legendDescription">${HeaderAccessScheduleHelp}</p>
+                            <div class="fieldset-fields fieldset-fields-listitems fieldset-fields-fieldmargins accessScheduleList itemsContainer vertical-list" is="emby-itemscontainer">
+
+                            </div>
+                        </fieldset>
+
+                        <div>
+                            <button is="emby-button" type="submit" class="raised button-submit block">
+                                <span>${Save}</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="tabContent tabContent-positioned flex flex-grow" data-index="3">
+        <div is="emby-scroller" data-horizontal="false" data-focusscroll="true" data-navcommands="card" data-forcescrollbar="true" class="scrollFrameY flex flex-grow" data-bindheader="true">
+
+            <div class="scrollSlider flex-grow padded-top-page padded-left padded-right">
+
+                <div class="readOnlyContent auto-center padded-bottom-page">
+
+                    <form class="updatePasswordForm passwordSection hide padded-top" style="margin: 0 auto 2em;">
+
+                        <div class="detailSection">
+                            <div class="fldCurrentPassword inputContainer hide">
+                                <input is="emby-input" type="password" class="txtCurrentPassword" label="${LabelCurrentPassword}" autocomplete="off" />
+                            </div>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="password" class="txtNewPassword" label="${LabelNewPassword}" autocomplete="off" required />
+                            </div>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="password" class="txtNewPasswordConfirm" label="${LabelNewPasswordConfirm}" autocomplete="off" required />
+                            </div>
+                            <div>
+                                <button is="emby-button" type="submit" class="raised button-submit block"><span>${SavePassword}</span></button>
+                            </div>
+                            <button is="emby-button" type="button" class="btnResetPassword raised button-cancel block hide">
+                                <span>${HeaderRemovePassword}</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <form class="profilePinForm userProfileSettingsForm hide auto-center padded-top" style="margin: 1em auto 0;">
+
+                        <fieldset>
+                            <legend>
+                                ${TitleProfilePin}
+                            </legend>
+                            <p class="legendDescription">
+                                ${ProfilePinDescription}
+                            </p>
+                            <div class="inputContainer">
+                                <input is="emby-input" type="text" class="txtProfilePin" label="${TitleProfilePin}" autocomplete="off" minlength="4" maxlength="4" size="4" pattern="\d{4,4}" inputmode="numeric" />
+                                <div class="fieldDescription pinFieldDescription"></div>
+                            </div>
+                            <div>
+                                <button is="emby-button" type="submit" class="raised button-submit block"><span>${SaveProfilePin}</span></button>
+                            </div>
+                        </fieldset>
+                    </form>
+
+                    <form class="localAccessForm localAccessSection hide" style="margin: 0 auto;">
+                        <fieldset>
+                            <legend>${HeaderLocalNetworkAccess}</legend>
+                            <div class="selectContainer fldInNetworkPasswordMode">
+                                <select is="emby-select" class="selectInNetworkPasswordMode" label="${LabelLocalNetworkPasswordMode}">
+                                    <option value="password">${RequirePasswordInLocalNetwork}</option>
+                                    <option value="nopassword">${NoPasswordInLocalNetwork}</option>
+                                    <option value="pin">${PinCodeInLocalNetwork}</option>
+                                </select>
+                                <div class="fieldDescription">${LocalNetworkPasswordModeHelp}</div>
+                            </div>
+                            <div class="inputContainer fldInNetworkPassword hide">
+                                <input placeholder="*****" is="emby-input" type="number" class="txtInNetworkPassword" label="${LabelLocalNetworkPinCode}" autocomplete="off" pattern="[0-9]*" step="1" maxlength="5" />
+                            </div>
+                            <div>
+                                <button is="emby-button" type="submit" class="raised button-submit block">
+                                    <span>${Save}</span>
+                                </button>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+</div>
+

@@ -1,0 +1,20 @@
+﻿<div is="emby-scroller" data-horizontal="false" data-focusscroll="true" data-navcommands="card" data-forcescrollbar="true" class="scrollFrameY flex flex-direction-column flex-grow" data-bindheader="true">
+    <div class="scrollSlider flex-grow padded-top-page padded-left padded-right padded-bottom-page">
+
+        <div class="readOnlyContent auto-center padded-top">
+
+            <form>
+                <div class="selectContainer">
+                    <select is="emby-select" class="selectLogLevel" label="${LabelEnableDebugLogging}">
+                        <option value="yes">${Yes}</option>
+                        <option value="restart">${YesUntilServerRestart}</option>
+                        <option value="rotate">${YesUntilLogRotate}</option>
+                        <option value="">${No}</option>
+                    </select>
+                    <div class="fieldDescription">${EnableDebugLoggingHelp}</div>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>

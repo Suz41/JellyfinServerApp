@@ -1,0 +1,38 @@
+<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+
+        <form class="auto-center fieldsets">
+
+            <fieldset class="fieldsetSubtitles">
+
+                <legend class="hide">${Subtitles}</legend>
+
+                <div class="fieldset-fields">
+
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectSubtitleLanguage autoSetting autoSave" data-refreshitemsonchange="true" data-reordering="true" data-joindelimiter="," multiple label="${LabelPreferredSubtitleLanguage}" data-settingfield="SubtitleLanguagePreference" data-settingowner="userconfiguration"></select>
+                    </div>
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectSubtitlePlaybackMode autoSetting autoSave emby-select-dynamicfielddescription" data-menu="custom" label="${LabelSubtitlePlaybackMode}" data-settingfield="SubtitleMode" data-settingowner="userconfiguration" data-triggerchange="true">
+                        </select>
+                        <div class="fieldDescription dynamicFieldDescription hide"></div>
+                    </div>
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkRememberSubtitles autoSetting autoSave" data-settingfield="RememberSubtitleSelections" data-settingowner="userconfiguration" />
+                            <span>${RememberSelectedSubtitleTracks}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${RememberSelectedSubtitleTracksHelp}</div>
+
+                        <div class="fieldDescription toggleFieldDescription fldClearTrackSelections">
+                            <button is="emby-button" type="button" class="button-link btnClearTrackSelections" data-mode="subtitles">
+                                <i class="md-icon button-icon button-icon-left">&#xe0b8;</i>
+                                <span>${ClearSavedTrackSelections}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>

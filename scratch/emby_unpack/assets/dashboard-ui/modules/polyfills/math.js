@@ -1,0 +1,1 @@
+Math.trunc||(Math.trunc=function(v){return v=+v,isFinite(v)?v-v%1||(v<0?-0:0===v?v:0):v});

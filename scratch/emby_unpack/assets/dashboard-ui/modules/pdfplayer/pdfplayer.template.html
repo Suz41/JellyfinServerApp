@@ -1,0 +1,52 @@
+<div class="formDialogHeader">
+    <button class="pdfDialogCloseButton" type="button" is="emby-dialogclosebutton" closetype="done"></button>
+   
+    <h3 class="pdfDialogHeaderTitle formDialogHeaderTitle withEllipsis fluidHeaderItem" data-fluid-priority="2"></h3>
+
+    <div class="pdfDialogHeaderSpacer"></div>
+
+    <div class="pdfControls">
+        
+        <button type="button" class="pdf-zoom-out dialogHeaderButton fluidHeaderItem paper-icon-button-light md-icon" title="${ZoomOut}" aria-label="${ZoomOut}">&#xe900;</button>
+        <button type="button" class="pdf-zoom-in dialogHeaderButton fluidHeaderItem paper-icon-button-light md-icon" title="${ZoomIn}" aria-label="${ZoomIn}">&#xe8ff;</button>
+        <button type="button" class="pdf-zoom-none dialogHeaderButton fluidHeaderItem paper-icon-button-light md-icon" data-fluid-priority="-1" title="${ZoomNone}" aria-label="${ZoomNone}">&#xf075;</button>
+        <button type="button" class="pdf-zoom-fit dialogHeaderButton fluidHeaderItem paper-icon-button-light md-icon" data-fluid-priority="3" title="${ZoomAutoFit}" aria-label="${ZoomAutoFit}">&#xf77a;</button>
+        <button type="button" class="pdf-mode dialogHeaderButton fluidHeaderItem paper-icon-button-light" data-fluid-priority="5" title="${LayoutPage}" aria-label="${LayoutPage}">
+            <i class="md-icon">&#xef42;</i>
+        </button>
+
+        <button type="button" class="pdf-previous autortl dialogHeaderButton md-icon paper-icon-button-light" title="${PreviousPage}" aria-label="${PreviousPage}">&#xe5cb;</button>
+
+        <div class="pdf-page">
+            <input type="text"  is="emby-input" class="pdf-page-input" maxlength="4" title="${CurrentPage}" aria-label="${CurrentPage}">
+            <div class="slash">/</div>
+            <div class="total" title="${TotalPages}" aria-label="${TotalPages}"></div>
+        </div>
+
+        <button type="button" class="pdf-next autortl dialogHeaderButton md-icon paper-icon-button-light" title="${NextPage}" aria-label="${NextPage}">&#xe5cc;</button>
+
+        <button type="button" class="pdf-toc dialogHeaderButton fluidHeaderItem md-icon paper-icon-button-light" data-fluid-priority="-1" title="${TableOfContents}" aria-label="${TableOfContents}">&#xe8de;</button>
+
+        <button type="button" class="pdf-more dialogHeaderButton fluidHeaderMore paper-icon-button-light md-icon" title="${More}" aria-label="${More}">&#xe5d3;</button>
+
+    </div>
+</div>
+
+<div class="formDialogContent pdfDialogContent">
+    
+    <div class="pdfContainer emby-scroller dialog-scrollY scrollY overflowYScroll" is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-forcenativescroll="true">
+        <div class="pdfContent scrollSlider scrollSliderY"></div>
+    </div>
+
+    <div class="pdfOverlayPaginator overflowYScroll">
+        <div class="pdfOverlayPaginatorFlexContainer">
+            <a class="previousTarget"></a>
+            <a class="nextTarget"></a>
+        </div>
+    </div>
+
+    <div class="pdfTocDrawer focuscontainer padded-bottom-page">
+    </div>
+
+</div>
+

@@ -1,0 +1,18 @@
+﻿<div class="searchFieldsInner flex align-items-center justify-content-center flex-direction-column">
+
+    <div class="inputContainer flex-grow flex align-items-center focuscontainer-x searchInputContainer" style="margin-bottom: 0;width:100%;">
+        <i class="md-icon searchFieldsSearchIcon hide secondaryText">search</i>
+        <input is="emby-input" class="searchfields-txtSearch flex-grow" type="text" autocomplete="off" maxlength="60" enterkeyhint="search" placeholder="${Search}" />
+        <button type="button" is="paper-icon-button-light" class="md-icon secondaryText btnVoiceInput hide flex-shrink-zero">&#xe029;</button>
+    </div>
+
+    <div class="hide verticalSection searchSuggestions hide padded-top" style="width:100%;">
+        <div>
+            <h2 class="sectionTitle suggestionsTitle" style="margin-top:.5em;">${Suggestions}</h2>
+        </div>
+
+        <div is="emby-itemscontainer" class="itemsContainer suggestionsItemsContainer vertical-list">
+        </div>
+    </div>
+</div>
+<div class="alphaPicker align-items-center hide padded-top searchFieldsBottomBorder" style="padding-top:.5em;padding-bottom:1em;font-size:111%;"></div>

@@ -1,0 +1,44 @@
+﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="auto-center padded-top">
+
+            <div class="infoBanner warningBanner">
+
+                <div class="infoBannerIconContainer">
+                    <i class="md-icon infoBannerIcon">warning</i>
+                </div>
+                <span class="infoBannerText">${AdvancedOptionsWarning}</span>
+            </div>
+
+            <div class="inputContainer fldCacheSize">
+                <input is="emby-input" type="number" inputmode="numeric" step="1" min="64" class="txtCacheSize autoSetting" label="${LabelDatabaseCacheSize}" data-settingfield="DatabaseCacheSizeMB" data-settingowner="serverconfiguration" />
+                <div class="fieldDescription">${LabelDatabaseCacheSizeHelp}</div>
+            </div>
+
+            <div class="toggleContainer fldOptimize">
+                <label>
+                    <input type="checkbox" is="emby-toggle" class="chkOptimizeOnShutdown autoSetting" data-settingfield="OptimizeDatabaseOnShutdown" data-settingowner="serverconfiguration" />
+                    <span>${LabelOptimizeDatabaseOnShutdown}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${LabelOptimizeDatabaseOnShutdownHelp}</div>
+            </div>
+
+            <div class="inputContainer fldAnalysisLimit">
+                <input is="emby-input" type="number" inputmode="numeric" step="1" min="400" class="txtAnalysisLimit autoSetting" label="${LabelDatabaseAnalysisLimit}" data-settingfield="DatabaseAnalysisLimit" data-settingowner="serverconfiguration" />
+                <div class="fieldDescription">${LabelDatabaseAnalysisLimitHelp}</div>
+            </div>
+
+            <div class="toggleContainer">
+                <label>
+                    <input type="checkbox" is="emby-toggle" class="chkVacuum autoSetting" data-settingfield="VacuumDatabaseOnStartup" data-settingowner="serverconfiguration" />
+                    <span>${LabelVacuumDb}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${LabelVacuumDbHelp}</div>
+            </div>
+
+            <button is="emby-button" type="submit" class="raised button-submit block">
+                <span>${Save}</span>
+            </button>
+        </form>
+    </div>
+</div>

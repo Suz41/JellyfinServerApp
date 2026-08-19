@@ -1,0 +1,28 @@
+<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-right padded-top-page padded-bottom-page">
+        <form class="auto-center fieldsets">
+
+            <h1 style="margin-top:0;" class="fieldsets-item">${LetsGetSetup}</h1>
+
+            <fieldset>
+                <legend class="hide">${Display}</legend>
+                <div class="fieldset-fields">
+
+                    <div class="toggleContainer fieldset-field fldDisplayMode autoSetting-autohide hide" data-apphostsupports="displaymode">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave chkTVDisplayMode" data-settingmethod="enableTVDisplayMode" data-settingowner="layoutmanager" data-changedelay="true" />
+                            <span>${LabelTVDisplayMode}</span>
+                        </label>
+                        <div class="fieldDescription">${TVDisplayModeHelp}</div>
+                        <div is="emby-premierecontainer" class="fieldDescription displayModePremiere hide" data-showifunlocked="playback,!playback-tv"></div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <button is="emby-button" type="submit" class="raised btnWelcomeNext block autofocus fieldsets-item">
+                <span>${Next}</span>
+                <i class="md-icon autortl button-icon button-icon-right">&#xe5C8;</i>
+            </button>
+        </form>
+    </div>
+</div>

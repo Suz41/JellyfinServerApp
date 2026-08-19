@@ -1,0 +1,132 @@
+<div class="formDialogHeader">
+    <button type="button" is="emby-dialogclosebutton"></button>
+    <h3 class="formDialogHeaderTitle">
+    </h3>
+</div>
+
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <div class="scrollSlider">
+        <form class="dialogContentInner dialog-content-centered padded-left padded-right">
+
+            <div class="selectContainer">
+                <select is="emby-select" class="selectSectionType" label="${LabelSectionType}" required>
+                    <option value="userviews">${HeaderMyMedia}</option>
+                    <option value="resume">${HeaderContinueWatching}</option>
+                    <option value="resumeaudio">${HeaderContinueListening}</option>
+                    <option value="latestmediablock">${HeaderLatestMedia}</option>
+                    <option value="collections">${Collections}</option>
+                    <option value="playlists">${Playlists}</option>
+                    <option value="boxset">${SingleCollection}</option>
+                    <option value="playlist">${SinglePlaylist}</option>
+                    <option value="items">${DynamicMedia}</option>
+                    <option value="latestmoviereleases">${RecentlyReleasedMovies}</option>
+                    <option value="latestepisodereleases">${RecentlyReleasedEpisodes}</option>
+                    <option value="onnow">${HeaderOnNow}</option>
+                    <option value="activerecordings">${HeaderActiveRecordings}</option>
+                </select>
+            </div>
+
+            <div class="selectContainer fldContainer hide">
+                <select is="emby-select" class="selectContainerItem" label="${Container}" data-hasitemimage="true" data-showtype="true">
+                </select>
+            </div>
+
+
+            <div class="selectContainer fldItemTypes hide">
+                <select is="emby-select" class="selectItemTypes" label="${LabelType}">
+                    <option value="Movie">${Movies}</option>
+                    <option value="Series">${Shows}</option>
+                    <option value="Movie,Series">${MoviesAndShows}</option>
+                    <option value="Episode">${Episodes}</option>
+                    <option value="MusicVideo">${HeaderMusicVideos}</option>
+                    <option value="Video">${Videos}</option>
+                    <option value="Photo">${Photos}</option>
+                    <option value="Program">${Programs}</option>
+                    <option value="TvChannel">${LiveTvChannels}</option>
+                    <option value="MusicAlbum">${HeaderMusicAlbums}</option>
+                    <option value="MusicArtist">${Artists}</option>
+                    <option value="Audio">${Songs}</option>
+                    <option value="AudioBook">${HeaderAudioBooks}</option>
+                    <option value="Trailer">${Trailers}</option>
+                    <option value="Game">${Games}</option>
+                    <option value="Book">${Books}</option>
+                </select>
+            </div>
+
+            <div class="inputContainer fldCustomName hide">
+                <input is="emby-input" class="txtCustomName" type="text" label="${HeaderCustomTitle}" />
+                <div class="fieldDescription">${CustomTitleHelp}</div>
+            </div>
+
+
+            <div class="selectContainer">
+                <select is="emby-select" class="selectDisplayMode" label="${ShowThisSection}">
+                    <option value="">${Always}</option>
+                    <option value="tv">${WhenTVDisplayModeIsOn}</option>
+                    <option value="mobile,desktop">${WhenTVDisplayModeIsOff}</option>
+                </select>
+            </div>
+
+            <div class="inputContainer fldSubtitle hide">
+                <input is="emby-input" class="txtSubtitle" type="text" label="${Subtitle}" />
+            </div>
+
+            <div class="selectContainer fldLibraries hide">
+                <select is="emby-select" class="selectLibraries" label="${Libraries}" allselected-labeltext="${All}" data-virtualscroll="false" multiple>
+                </select>
+            </div>
+
+            <div class="toggleContainer hide fldIncludeNextUpInResume">
+                <label>
+                    <input type="checkbox" is="emby-toggle" class="chkIncludeNextUpInResume" checked />
+                    <span>${IncludeNextUpInContinueWatching}</span>
+                </label>
+                <div class="fieldDescription toggleFieldDescription">${IncludeNextUpInContinueWatchingHelp}</div>
+            </div>
+
+            <div class="selectContainer fldViewType hide">
+                <select is="emby-select" class="selectViewType" label="${LabelViewType}">
+                </select>
+            </div>
+
+            <div class="selectContainer fldSortBy hide">
+                <select is="emby-select" class="selectSortBy" label="${HeaderSortBy}">
+                </select>
+            </div>
+
+            <div class="selectContainer fldSortOrder hide">
+                <select is="emby-select" class="selectSortOrder" label="${HeaderSortOrder}">
+                    <option value="Ascending">${Ascending}</option>
+                    <option value="Descending">${Descending}</option>
+                </select>
+            </div>
+
+            <div class="selectContainer fldScrollDirection hide">
+                <select is="emby-select" class="selectScrollDirection" label="${LabelScrollDirection}">
+                    <option value="">${Auto}</option>
+                    <option value="Horizontal">${Horizontal}</option>
+                    <option value="Vertical">${Vertical}</option>
+                </select>
+                <div class="fieldDescription">${ScrollDirectionHelp}</div>
+            </div>
+
+            <div class="selectContainer fldImageType hide">
+                <select is="emby-select" class="selectImageType" label="${LabelImageType}">
+                    <option value="">${Auto}</option>
+                    <option value="Primary">${Primary}</option>
+                    <option value="Thumb">${Thumb}</option>
+                </select>
+            </div>
+
+            <div class="filters hide">
+
+            </div>
+
+            <div class="formDialogFooter">
+                <button is="emby-button" type="submit" class="raised button-submit block btnSubmit formDialogFooterItem">
+                    ${Save}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

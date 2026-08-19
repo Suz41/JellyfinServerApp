@@ -1,0 +1,1 @@
+.darkContentContainer{--theme-text-color-alpha:.9;color:hsla(var(--theme-text-color-hue),var(--theme-text-color-saturation),var(--theme-text-color-lightness),var(--theme-text-color-alpha))}

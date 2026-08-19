@@ -1,0 +1,90 @@
+﻿<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="newUserProfileForm auto-center padded-top fieldsets">
+
+
+            <fieldset>
+
+                <div class="fieldset-fields">
+                    <div class="inputContainer fieldset-field">
+                        <input is="emby-input" class="txtUserName" required type="text" label="${LabelName}" />
+                        <div class="fieldDescription">${NewUserNameHelp}</div>
+                    </div>
+                    <div class="selectContainer fieldset-field fldCopyFromUser">
+                        <label>
+                            <select is="emby-select" label="${LabelCopyFromUser}" class="selectCopyFromUser" data-hasitemimage="true">
+                            </select>
+                        </label>
+                        <div class="fieldDescription">${CopyFromUserHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="copyOptionsContainer hide">
+
+                <legend>${HeaderCopyOptions}</legend>
+                <div class="fieldset-fields fieldset-fields-listitems">
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserPolicy" checked />
+                        <span>${UserPolicy}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserConfiguration" checked />
+                        <span>${UserConfiguration}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field hide fldCopyUserData">
+                        <input type="checkbox" is="emby-toggle" class="chkCopyUserData" />
+                        <span>${UserDataAndDescription}</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset>
+
+                <div class="fieldset-fields">
+                    <label class="toggleContainer fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkIsAdmin" />
+                        <span>${OptionAllowUserToManageServer}</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset class="folderAccessContainer hide">
+                <legend>${HeaderLibraryAccess}</legend>
+
+                <div class="fieldset-fields fieldset-fields-listitems">
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkEnableAllFolders" />
+                        <span>${All}</span>
+                    </label>
+                    <div class="folderAccess fieldset-fields-nested fieldset-fields-listitems">
+                    </div>
+                </div>
+                <div class="fieldDescription">${LibraryAccessHelp}</div>
+            </fieldset>
+
+            <fieldset class="channelAccessContainer hide hide">
+                <legend>${HeaderChannelAccess}</legend>
+                <div class="fieldset-fields fieldset-fields-listitems">
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="chkEnableAllChannels" />
+                        <span>${All}</span>
+                    </label>
+                    <div class="channelAccess fieldset-fields-nested fieldset-fields-listitems">
+                    </div>
+                </div>
+                <div class="fieldDescription">${ChannelAccessHelp}</div>
+            </fieldset>
+
+            <div>
+                <button is="emby-button" type="submit" class="raised button-submit block">
+                    <span>${Save}</span>
+                </button>
+
+                <button is="emby-button" type="button" class="raised button-cancel block btnCancel">
+                    <span>${Cancel}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,82 @@
+﻿<div class="formDialogHeader">
+    <button type="button" is="emby-dialogclosebutton" closetype="done"></button>
+    <h3 class="formDialogHeaderTitle">
+        ${Settings}
+    </h3>
+</div>
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <form class="scrollSlider dialogContentInner dialog-content-centered padded-left padded-right fieldsets">
+
+        <fieldset>
+            <div class="fieldset-fields">
+                <div class="selectContainer fieldset-field">
+                    <select is="emby-select" label="${SortChannelsBy}" class="selectChannelSort">
+                    </select>
+                </div>
+
+                <div class="selectContainer fldTags fieldset-field hide">
+                    <label>
+                        <select is="emby-select" label="${LabelChannelTags}" class="selectTags" data-autoallany="false" multiple>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="selectContainer fieldset-field">
+                    <label>
+                        <select is="emby-select" label="${LabelChannelDisplay}" class="selectChannelDisplay">
+                            <option value="image">${Image}</option>
+                            <option value="name">${Title}</option>
+                            <option value="both">${Both}</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset>
+
+            <legend>${HeaderShowFields}</legend>
+
+            <div class="fieldset-fields fieldset-fields-listitems">
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkChannelNumber" />
+                    <span>${ChannelNumber}</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="4k" data-default="true" />
+                    <span>4K</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="hd" />
+                    <span>HD</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="live" data-default="true" />
+                    <span>${Live}</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="new" />
+                    <span>${AttributeNew}</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="premiere" data-default="true" />
+                    <span>${Premiere}</span>
+                </label>
+                <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkIndicator" data-type="repeat" />
+                    <span>${Repeat}</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <div class="fieldset-fields">
+                <label class="toggleContainer fieldset-field">
+                    <input type="checkbox" is="emby-toggle" class="chkColorCodedBackgrounds" />
+                    <span>${EnableColorCodedBackgrounds}</span>
+                </label>
+            </div>
+        </fieldset>
+
+    </form>
+</div>

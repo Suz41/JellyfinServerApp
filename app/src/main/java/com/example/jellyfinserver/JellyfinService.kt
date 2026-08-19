@@ -113,6 +113,16 @@ class JellyfinService : Service() {
                     fxrDir.mkdirs()
                     sharedDir.mkdirs()
 
+                    // Clean up old .so symlinks in jellyfinHome first (since native library dir path changes on upgrades)
+                    val jellyfinHomeFiles = jellyfinHome.listFiles()
+                    if (jellyfinHomeFiles != null) {
+                        for (file in jellyfinHomeFiles) {
+                            if (file.name.endsWith(".so")) {
+                                file.delete()
+                            }
+                        }
+                    }
+
                     val libFiles = File(nativeLibDir).listFiles()
                     if (libFiles != null) {
                         for (lib in libFiles) {
@@ -122,11 +132,15 @@ class JellyfinService : Service() {
                                     val symlinkFile = File(fxrDir, "libhostfxr.so")
                                     Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                                 }
-                                // Symlink all libraries directly to the dotnet root (for self-contained layout)
+                                // Symlink all libraries directly to jellyfinHome (for self-contained layout next to jellyfin.dll)
+                                val symlinkAppFile = File(jellyfinHome, lib.name)
+                                Os.symlink(lib.absolutePath, symlinkAppFile.absolutePath)
+
+                                // Symlink all libraries directly to the dotnet root (for fallback self-contained layout)
                                 val symlinkRootFile = File(dotnetRoot, lib.name)
                                 Os.symlink(lib.absolutePath, symlinkRootFile.absolutePath)
 
-                                // Symlink all libraries to shared framework directory (for framework-dependent layout fallback)
+                                // Symlink all libraries to shared framework directory (for fallback framework-dependent layout)
                                 val symlinkFile = File(sharedDir, lib.name)
                                 Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                             }
@@ -145,8 +159,8 @@ class JellyfinService : Service() {
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
                 val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
                 val hostfxrPath = File(fxrDir, "libhostfxr.so")
-                val hostpolicyPath = File(dotnetRoot, "libhostpolicy.so")
-                val coreclrPath = File(dotnetRoot, "libcoreclr.so")
+                val hostpolicyPath = File(jellyfinHome, "libhostpolicy.so")
+                val coreclrPath = File(jellyfinHome, "libcoreclr.so")
                 val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
                 val depsPath = File(jellyfinHome, "jellyfin.deps.json")
 

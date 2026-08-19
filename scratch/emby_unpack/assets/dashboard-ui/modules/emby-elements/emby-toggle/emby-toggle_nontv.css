@@ -1,0 +1,1 @@
+.emby-toggle:focus-visible~.toggleSwitch::before{box-shadow:0 0 0 .7em rgba(0,0,0,.3)}@media all and (pointer:fine){.toggleSwitch{width:3em;height:1.66em}.toggleSwitch::before{height:1.37em;width:1.37em}.emby-toggle:checked~.toggleSwitch::before{left:calc(100% - .2em - 1.37em);right:initial;inset-inline-start:calc(100% - .2em - 1.37em);inset-inline-end:initial}}

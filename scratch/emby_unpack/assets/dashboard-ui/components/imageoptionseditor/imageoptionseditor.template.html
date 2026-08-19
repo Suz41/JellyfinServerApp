@@ -1,0 +1,102 @@
+﻿<div class="formDialogHeader">
+    <button type="button" is="emby-dialogclosebutton" closetype="done"></button>
+    <h3 class="formDialogHeaderTitle">
+        ${HeaderImageOptions}
+    </h3>
+</div>
+
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <div class="scrollSlider">
+        <form class="dialogContentInner dialog-content-centered padded-left padded-right fieldsets" style="padding-top:0;">
+
+            <fieldset>
+                <legend>${HeaderFetchImages}</legend>
+
+                <div class="imageSelections fieldset-fields fieldset-fields-listitems">
+
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Primary" />
+                        <span>${Primary}</span>
+                    </label>
+
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Art" />
+                        <span>${Art}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Banner" />
+                        <span>${Banner}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Box" />
+                        <span>${Box}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="BoxRear" />
+                        <span>${BoxRear}</span>
+                    </label>
+
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Disc" />
+                        <span>${Disc}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Logo" />
+                        <span>${Logo}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Menu" />
+                        <span>${Menu}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                        <input type="checkbox" is="emby-toggle" class="imageType" data-imagetype="Thumb" />
+                        <span>${Thumb}</span>
+                    </label>
+                </div>
+            </fieldset>
+
+            <fieldset class="backdropFields">
+
+                <legend class="hide">${HeaderImageOptions}</legend>
+
+                <div class="fieldset-fields">
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectMaxBackdrops" required="required" label="${LabelMaxBackdropsPerItem}">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                            <option value="19">19</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectMinBackdropDownloadWidth" required="required" label="${LabelMinBackdropDownloadWidth}">
+                            <option value="0">0</option>
+                            <option value="480">480</option>
+                            <option value="720">720</option>
+                            <option value="1280">1280</option>
+                            <option value="1920">1920</option>
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+        </form>
+    </div>
+</div>

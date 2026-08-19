@@ -1,0 +1,28 @@
+﻿<div class="formDialogHeader">
+    <button type="button" is="emby-dialogclosebutton" closetype="done"></button>
+    <h3 class="formDialogHeaderTitle"></h3>
+</div>
+
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <div class="scrollSlider dialogContentInner dialog-content-centered padded-left padded-right fieldsets">
+
+        <div class="infoBanner warningBanner fieldsets-item">
+            ${ChangingMetadataImageSettingsNewContent}
+        </div>
+
+        <fieldset class="folders">
+            <legend class="legendWithContent">
+                <div class="legendText">${Folders}</div>
+                <div class="legendActions">
+                    <button is="emby-button" type="button" class="raised raised-mini btnAddFolder submit">
+                        <i class="md-icon button-icon button-icon button-icon-left">&#xe145;</i>
+                        <span>${Add}</span>
+                    </button>
+                </div>
+            </legend>
+            <div class="folderList sectionContent itemsContainer vertical-list fieldset-fields fieldset-fields-fieldmargins" style="margin-bottom:1em;" is="emby-itemscontainer"></div>
+        </fieldset>
+
+        <div class="libraryOptions"></div>
+    </div>
+</div>

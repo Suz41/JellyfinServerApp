@@ -1,0 +1,154 @@
+<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="auto-center padded-top fieldsets">
+
+            <fieldset>
+                <legend class="hide">${Settings}</legend>
+                <div class="fieldset-fields">
+                    <div class="selectContainer fieldset-field">
+                        <select class="selectTheme autoSetting autoSave" is="emby-select" label="${LabelTheme}" data-settingmethod="theme" data-settingowner="usersettings"></select>
+                        <button is="emby-button" type="button" class="raised btnThemeSettings hide">
+                            <span>${ThemeSettings}</span>
+                        </button>
+                        <div is="emby-premierecontainer" class="fieldDescription featurePremiereInfo"></div>
+                    </div>
+
+                    <div class="selectContainer fieldset-field fldSettingsTheme">
+                        <select class="selectSettingsTheme autoSetting autoSave" is="emby-select" label="${LabelSettingsTheme}" data-settingmethod="settingsTheme" data-settingowner="usersettings"></select>
+                        <button is="emby-button" type="button" class="raised btnThemeSettings hide">
+                            <span>${ThemeSettings}</span>
+                        </button>
+                        <div is="emby-premierecontainer" class="fieldDescription featurePremiereInfo"></div>
+                    </div>
+
+                    <div class="selectContainer fieldset-field autoSetting-autohide fldAccentColor hide" data-cssfeatures="cssvars">
+                        <select class="selectAccentColor autoSetting autoSave" is="emby-select" label="${LabelThemeAccentColor}" data-settingmethod="accentColor" data-settingowner="usersettings">
+                            <option value="emby">Emby</option>
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="pink">Pink</option>
+                            <option value="purple">Purple</option>
+                            <option value="red">Red</option>
+                        </select>
+                        <div class="fieldDescription">${ThemeAccentColorDescription}</div>
+                        <div is="emby-premierecontainer" class="fieldDescription featurePremiereInfo"></div>
+                    </div>
+
+                    <div class="selectContainer fieldset-field fldNowPlayingAudioBackground">
+                        <select is="emby-select" class="selectNowPlayingAudioBackground autoSetting autoSave" label="${LabelNowPlayingAudioBackgroundStyle}" data-settingmethod="nowPlayingAudioBackgroundStyle" data-settingowner="usersettings">
+                            <option value="backdrop">${Backdrop}</option>
+                            <option value="blur">${PrimaryImageBlur}</option>
+                        </select>
+                    </div>
+
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="selectSeriesDisplay autoSetting autoSave" label="${PreferredShowDisplay}" data-settingmethod="seriesDisplay" data-settingowner="usersettings">
+                            <option value="episodes">${ShowAllEpisodesAllSeasons}</option>
+                            <option value="episodessingleseason">${ShowAllEpisodesSingleSeason}</option>
+                            <option value="seasons">${ShowSeasonFolders}</option>
+                        </select>
+                    </div>
+
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="enableAutoFolderJumpThrough" data-settingowner="usersettings" />
+                            <span>${AutoOpenSingleItemsFolders}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${AutoOpenSingleItemsFoldersHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="hideEpisodeSpoilerInfo" data-settingowner="usersettings" />
+                            <span>${HideEpisodeSpoilerInfo}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${HideEpisodeSpoilerInfoHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>${HidePlayedMediaFrom}</legend>
+                <div class="imageSelections fieldset-fields fieldset-fields-listitems">
+
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field fldHidePlayedFromLatest hide">
+                        <input type="checkbox" is="emby-toggle" class="chkHidePlayedFromLatest autoSetting autoSave" data-settingfield="HidePlayedInLatest" data-settingowner="userconfiguration" />
+                        <span>${HeaderLatestMedia}</span>
+                    </label>
+
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field autoSetting-autohide hide" data-minserverversion="4.8.0.48">
+                        <input type="checkbox" is="emby-toggle" class="chkHidePlayedMoreLikeThis autoSetting autoSave" data-settingfield="HidePlayedInMoreLikeThis" data-settingowner="userconfiguration" />
+                        <span>${HeaderMoreLikeThis}</span>
+                    </label>
+                    <label class="toggleContainer toggleContainer-listItem fieldset-field autoSetting-autohide hide" data-minserverversion="4.8.0.48">
+                        <input type="checkbox" is="emby-toggle" class="chkHidePlayedSuggestions autoSetting autoSave" data-settingfield="HidePlayedInSuggestions" data-settingowner="userconfiguration" />
+                        <span>${Suggestions}</span>
+                    </label>
+                </div>
+            </fieldset>
+
+
+            <fieldset>
+                <legend>${DetailScreenOptions}</legend>
+
+                <div class="fieldset-fields">
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkLogoImages autoSetting autoSave" data-settingmethod="setEnableLogoAsTitle" data-getsettingmethod="getEnableLogoAsTitle" data-settingowner="usersettings" />
+                            <span>${EnableLogoImagesAsTitle}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${EnableLogoImagesAsTitleHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="showDetailPoster" data-settingowner="usersettings" />
+                            <span>${ShowPosterOnDetails}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${ShowPosterOnDetailsHelp}</div>
+                    </div>
+
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="autoSetting autoSave" label="${LabelGenreDisplayLimit}" data-settingmethod="genreLimitOnDetails" data-settingowner="usersettings">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                        <div class="fieldDescription">${GenreDisplayLimitHelp}</div>
+                    </div>
+                    <div class="selectContainer fieldset-field">
+                        <select is="emby-select" class="autoSetting autoSave" label="${LabelGenreDisplayLimitForLists}" data-settingmethod="genreLimitForListsOnDetails" data-settingowner="usersettings">
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                        <div class="fieldDescription">${GenreDisplayLimitForListsHelp}</div>
+                    </div>
+                    <div class="toggleContainer fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="showFullMediaInfoOnDetailScreen" data-settingowner="usersettings" />
+                            <span>${ShowMediaInfoOnDetailScreens}</span>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+        </form>
+    </div>
+</div>

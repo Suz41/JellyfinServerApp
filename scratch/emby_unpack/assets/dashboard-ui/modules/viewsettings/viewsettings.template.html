@@ -1,0 +1,67 @@
+<div is="emby-scroller" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" class="formDialogContent">
+    <div class="scrollSlider">
+        <form class="dialogContentInner dialog-content-centered padded-left padded-right fieldsets">
+            <fieldset>
+
+                <legend class="hide">${Settings}</legend>
+
+                <div class="fieldset-fields">
+                    <div class="selectContainer viewSetting hide fieldset-field" data-settingname="imageType">
+                        <select is="emby-select" label="${LabelView}" class="selectImageType" data-menu="custom" data-hasitemicon="true">
+                            <option value="primary" data-icon="grid_view">${Primary}</option>
+                            <option value="banner" data-icon="grid_view">${Banner}</option>
+                            <option value="disc" data-icon="grid_view">${Disc}</option>
+                            <option value="logo" data-icon="grid_view">${Logo}</option>
+                            <option value="thumb" data-icon="grid_view">${Thumb}</option>
+                            <option value="list" data-icon="menu">${List}</option>
+                            <option value="datagrid" data-icon="table_view">${Table}</option>
+                        </select>
+                    </div>
+
+                    <div class="selectContainer fldCardSize hide fieldset-field">
+                        <select is="emby-select" class="selectCardSize" label="${LabelImageSize}">
+                            <option value="extrasmall">${ExtraSmall}</option>
+                            <option value="smaller">${Smaller}</option>
+                            <option value="small">${Small}</option>
+                            <option value="normal">${Medium}</option>
+                            <option value="">${Default}</option>
+                            <option value="large">${Large}</option>
+                            <option value="larger">${Larger}</option>
+                            <option value="extralarge">${ExtraLarge}</option>
+                        </select>
+                        <div class="fieldDescription">${ImageSizeHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer viewSetting viewSetting-toggleContainer hide fieldset-field" data-settingname="groupBySeries">
+                        <label>
+                            <input is="emby-toggle" type="checkbox" />
+                            <span>${GroupBySeries}</span>
+                        </label>
+                    </div>
+
+                    <div class="toggleContainer viewSetting viewSetting-toggleContainer hide chkGroupItemsIntoCollections fieldset-field" data-settingname="groupItemsIntoCollections">
+                        <label>
+                            <input is="emby-toggle" type="checkbox" />
+                            <span>${GroupItemsIntoCollections}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${GroupItemsIntoCollectionsHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer viewSetting viewSetting-toggleContainer hide chkGroupItemsIntoTags fieldset-field" data-settingname="groupItemsIntoTags">
+                        <label>
+                            <input is="emby-toggle" type="checkbox" />
+                            <span>${GroupItemsIntoTags}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${GroupItemsIntoTagsHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="showFieldsSection hide">
+                <legend>${HeaderShowFields}</legend>
+                <div class="fieldset-fields fieldset-fields-listitems showFieldsList">
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>

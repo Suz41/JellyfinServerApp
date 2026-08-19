@@ -1,0 +1,198 @@
+<div is="emby-scroller" class="view flex flex-direction-column scrollFrameY flex-grow" data-mousewheel="true" data-horizontal="false" data-forcescrollbar="true" data-focusscroll="true" data-bindheader="true">
+    <div class="scrollSlider flex-grow flex-direction-column padded-left padded-left-page padded-right padded-top-page padded-bottom-page settingsContainer">
+        <form class="auto-center fieldsets">
+
+            <p class="fieldsets-item secondaryText">${TheseSettingsApplyAppDevice}</p>
+
+            <fieldset class="videoQualitySection">
+                <legend>
+                    ${Video}
+                </legend>
+                <div class="fieldset-fields">
+                    <div class="selectContainer fldVideoInNetworkQuality hide fieldset-field">
+                        <select is="emby-select" class="selectVideoInNetworkQuality autoSetting autoSave" label="${LabelHomeNetworkQuality}" data-settingmethod="selectVideoInNetworkQuality" data-settingowner="appsettings"></select>
+                    </div>
+                    <div class="selectContainer fldVideoInternetQuality hide fieldset-field">
+                        <select is="emby-select" class="selectVideoInternetQuality autoSetting autoSave" label="${LabelInternetQuality}" data-settingmethod="selectVideoInternetQuality" data-settingowner="appsettings"></select>
+                    </div>
+                    <div class="selectContainer fldVideoCellularQuality hide fieldset-field">
+                        <select is="emby-select" class="selectVideoCellularQuality autoSetting autoSave" label="${LabelCellularQuality}" data-settingmethod="selectVideoCellularQuality" data-settingowner="appsettings"></select>
+                    </div>
+                    <div class="selectContainer fldChromecastQuality hide autoSetting-autohide fieldset-field" data-apphostsupports="chromecast">
+                        <select is="emby-select" class="selectChromecastVideoQuality autoSetting autoSave" label="${LabelMaxChromecastBitrate}" data-settingmethod="maxChromecastBitrate" data-settingowner="appsettings"></select>
+                    </div>
+                    <div class="selectContainer hide autoSetting-autohide fieldset-field" data-apphostsupports="backgroundvideo" data-layoutmode="!tv">
+                        <select is="emby-select" class="selectBackgroundVideo autoSetting autoSave" label="${LabelBackgroundVideoPlayback}" data-settingmethod="backgroundVideo" data-settingowner="appsettings">
+                            <option value="on">${AlwaysOn}</option>
+                            <option value="external" class="hide autoSetting-autohide" data-apphostsupports="backgroundvideoexternalspeakers">${HeadphonesOrExternalSpeakersConnected}</option>
+                            <option value="">${Off}</option>
+                        </select>
+                        <div class="fieldDescription">${BackgroundVideoPlaybackHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer hide autoSetting-autohide fieldset-field" data-apphostsupports="forcetranscodingforformats">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="allowDirectStreamLiveTV" data-settingowner="appsettings" />
+                            <span>${PreferDirectStreamLiveTV}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${PreferDirectStreamLiveTVHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="audioSection hide">
+                <legend>
+                    ${Audio}
+                </legend>
+                <div class="fieldset-fields">
+
+                    <div class="selectContainer fldAudioInternetQuality hide fieldset-field">
+                        <select is="emby-select" class="selectMusicInternetQuality autoSetting autoSave" label="${LabelInternetQuality}" data-settingmethod="selectMusicInternetQuality" data-settingowner="appsettings"></select>
+                    </div>
+                    <div class="selectContainer musicCellularQualitySection hide fieldset-field">
+                        <select is="emby-select" class="selectMusicCellularQuality autoSetting autoSave" label="${LabelCellularQuality}" data-settingmethod="selectMusicCellularQuality" data-settingowner="appsettings"></select>
+                    </div>
+
+                    <div class="toggleContainer hide autoSetting-autohide fieldset-field" data-apphostsupports="convertunsupportedsurroundaudio">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="autoSetting autoSave" data-settingmethod="convertUnsupportedSurroundAudio" data-settingowner="appsettings" />
+                            <span>${ConvertUnsupportedAudio}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${ConvertUnsupportedAudioHelp}</div>
+                    </div>
+
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>
+                    ${Advanced}
+                </legend>
+                <div class="fieldset-fields">
+                    <div class="toggleContainer cinemaModeOptions fieldset-field">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkEnableCinemaMode autoSetting autoSave" data-settingmethod="enableCinemaMode" data-settingowner="appsettings" />
+                            <span>${EnableCinemaMode}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${CinemaModeConfigurationHelp}</div>
+                    </div>
+                    <div class="toggleContainer fldEnableResolutionSwitch hide autoSetting-autohide fieldset-field" data-apphostsupports="changerefreshrate">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkEnableResolutionSwitch autoSetting autoSave" data-settingmethod="enableResolutionSwitching" data-settingowner="appsettings" />
+                            <span>${EnableResolutionSwitching}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${EnableResolutionSwitchingHelp}</div>
+                    </div>
+                    <div class="toggleContainer fldEnableRefreshRate hide autoSetting-autohide fieldset-field" data-apphostsupports="changerefreshrate">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkEnableRefreshRate autoSetting autoSave" data-settingmethod="enableRefreshRateSwitching" data-settingowner="appsettings" />
+                            <span>${EnableDisplayRefreshRateSwitching}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">${EnableDisplayRefreshRateSwitchingHelp}</div>
+                    </div>
+
+                    <div class="toggleContainer fldExternalPlayer hide autoSetting-autohide fieldset-field" data-apphostsupports="externalplayerintent">
+                        <label>
+                            <input type="checkbox" is="emby-toggle" class="chkExternalVideoPlayer autoSetting autoSave" data-settingmethod="enableSystemExternalPlayers" data-settingowner="appsettings" />
+                            <span>${EnableExternalVideoPlayers}</span>
+                        </label>
+                        <div class="fieldDescription toggleFieldDescription">
+                            <div class="labelNativeExternalPlayers">${EnableExternalVideoPlayersHelp}</div>
+                        </div>
+                    </div>
+
+                    <div class="selectContainer fldVideoUnderUI fieldset-field">
+                        <select is="emby-select" class="selectVideoUnderUI autoSetting autoSave" label="${LabelVideoBackBehavior}" data-settingmethod="enableVideoUnderUI" data-settingowner="appsettings" data-triggerchange="true">
+                            <option value="stop">${Stop}</option>
+                            <option value="play">${KeepPlayingInBackground}</option>
+                        </select>
+                    </div>
+
+                    <div class="selectContainer hide autoSetting-autohide fieldset-field" data-layoutmode="tv" data-fieldequals=".selectVideoUnderUI=stop">
+                        <select is="emby-select" class="selectHideMediaTransport autoSetting autoSave" label="${LabelHideMediaTransportButtons}" data-settingmethod="hideMediaTransportButtons" data-settingowner="appsettings">
+                            <option value="auto">${Auto}</option>
+                            <option value="true">${Yes}</option>
+                            <option value="false">${No}</option>
+                        </select>
+                        <div class="fieldDescription">${HideMediaTransportButtonsHelp}</div>
+                    </div>
+
+                    <div class="selectContainer fldOrientationLock hide fieldset-field">
+                        <select is="emby-select" class="selectOrientationLock autoSetting autoSave" label="${LabelScreenOrientationDuringVideo}" data-settingmethod="videoOrientation" data-settingowner="appsettings">
+                            <option value="auto">${Auto}</option>
+                            <option value="landscape">${LockToLandscape}</option>
+                            <option value="device">${UseDeviceSetting}</option>
+                        </select>
+                    </div>
+
+                    <div class="selectContainer hide autoSetting-autohide fieldset-field" data-layoutmode="tv">
+                        <select is="emby-select" class="autoSetting autoSave" label="${LabelVideoPlayerLongPressAction}" data-settingmethod="videoPlayerLongPressAction" data-settingowner="appsettings">
+                            <option value="">${None}</option>
+                            <option value="audio">${Audio}</option>
+                            <option value="subtitles">${Subtitles}</option>
+                            <option value="playbackspeed">${PlaybackSpeed}</option>
+                            <option value="settings">${Settings}</option>
+                            <option value="togglestats">${StatsForNerds}</option>
+                        </select>
+                        <div class="fieldDescription">${VideoPlayerLongPressActionHelp}</div>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="hide autoSetting-autohide" data-apphostsupports="forcetranscodingforformats">
+                <legend>
+                    ${HeaderForceConversionForFormats}
+                </legend>
+                <p class="legendDescription">
+                    ${ForceConversionForFormatsHelp}
+                </p>
+                <div class="fieldset-fields fieldset-fields-listitems">
+
+                    <div class="fieldset-fields fieldset-fields-listitems fieldset-fields-nested toggleList">
+
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="avi" class="autoSetting autoSave" data-settingmethod="forceTranscodingForContainer" data-settingowner="appsettings" />
+                            <span>AVI</span>
+                        </label>
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="mpegts" class="autoSetting autoSave" data-settingmethod="forceTranscodingForContainer" data-settingowner="appsettings" />
+                            <span>MPEGTS</span>
+                        </label>
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="mpeg" class="autoSetting autoSave" data-settingmethod="forceTranscodingForContainer" data-settingowner="appsettings" />
+                            <span>MPEG</span>
+                        </label>
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="flac" class="autoSetting autoSave" data-settingmethod="forceTranscodingForContainer" data-settingowner="appsettings" />
+                            <span>FLAC</span>
+                        </label>
+                    </div>
+                    <div class="fieldset-fields fieldset-fields-listitems fieldset-fields-nested toggleList">
+
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="av1" class="autoSetting autoSave" data-settingmethod="forceTranscodingForVideoCodec" data-settingowner="appsettings" />
+                            <span>AV1</span>
+                        </label>
+
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="vc1" class="autoSetting autoSave" data-settingmethod="forceTranscodingForVideoCodec" data-settingowner="appsettings" />
+                            <span>VC1</span>
+                        </label>
+                    </div>
+                    <div class="fieldset-fields fieldset-fields-listitems fieldset-fields-nested toggleList">
+
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="ac3" class="autoSetting autoSave" data-settingmethod="forceTranscodingForAudioCodec" data-settingowner="appsettings" />
+                            <span>AC3</span>
+                        </label>
+
+                        <label class="toggleContainer toggleContainer-listItem fieldset-field">
+                            <input type="checkbox" is="emby-toggle" data-id="eac3" class="autoSetting autoSave" data-settingmethod="forceTranscodingForAudioCodec" data-settingowner="appsettings" />
+                            <span>EAC3</span>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+        </form>
+    </div>
+</div>
