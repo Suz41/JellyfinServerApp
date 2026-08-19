@@ -85,8 +85,30 @@ class JellyfinService : Service() {
                 }
 
                 val nativeLibDir = applicationInfo.nativeLibraryDir
+                logAndNotify("Native lib dir: $nativeLibDir")
+
+                // Log all extracted native libraries for debugging
+                val libFiles = File(nativeLibDir).listFiles()
+                if (libFiles != null) {
+                    logAndNotify("Found ${libFiles.size} native libs:")
+                    libFiles.forEach { logAndNotify("  ${it.name} (${it.length()} bytes)") }
+                } else {
+                    logAndNotify("WARNING: nativeLibDir is empty or missing!")
+                }
+
                 val loaderPath = File(nativeLibDir, "libld.so").absolutePath
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
+
+                if (!File(loaderPath).exists()) {
+                    logAndNotify("ERROR: libld.so not found at $loaderPath")
+                    isRunning = false
+                    return@Thread
+                }
+                if (!File(jellyfinBin).exists()) {
+                    logAndNotify("ERROR: libjellyfin.so not found at $jellyfinBin")
+                    isRunning = false
+                    return@Thread
+                }
 
                 logAndNotify("Starting Jellyfin process...")
 

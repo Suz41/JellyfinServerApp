@@ -50,6 +50,10 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            // Force extract .so files to disk so we can exec() them at runtime
+            useLegacyPackaging = true
+        }
     }
 }
 
