@@ -117,12 +117,16 @@ class JellyfinService : Service() {
                     if (libFiles != null) {
                         for (lib in libFiles) {
                             if (lib.name.endsWith(".so")) {
-                                // Symlink hostfxr
+                                // Symlink hostfxr to host/fxr/9.0.16/
                                 if (lib.name == "libhostfxr.so") {
                                     val symlinkFile = File(fxrDir, "libhostfxr.so")
                                     Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                                 }
-                                // Symlink all libraries to shared framework directory
+                                // Symlink all libraries directly to the dotnet root (for self-contained layout)
+                                val symlinkRootFile = File(dotnetRoot, lib.name)
+                                Os.symlink(lib.absolutePath, symlinkRootFile.absolutePath)
+
+                                // Symlink all libraries to shared framework directory (for framework-dependent layout fallback)
                                 val symlinkFile = File(sharedDir, lib.name)
                                 Os.symlink(lib.absolutePath, symlinkFile.absolutePath)
                             }
@@ -141,12 +145,14 @@ class JellyfinService : Service() {
                 val jellyfinBin = File(nativeLibDir, "libjellyfin.so").absolutePath
                 val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
                 val hostfxrPath = File(fxrDir, "libhostfxr.so")
+                val hostpolicyPath = File(dotnetRoot, "libhostpolicy.so")
 
                 logAndNotify("Verifying required files before launch:")
                 logAndNotify("  Loader exists: ${File(loaderPath).exists()}")
                 logAndNotify("  Apphost exists: ${File(jellyfinBin).exists()}")
                 logAndNotify("  Jellyfin DLL exists: ${jellyfinDll.exists()}")
                 logAndNotify("  hostfxr exists: ${hostfxrPath.exists()}")
+                logAndNotify("  hostpolicy exists: ${hostpolicyPath.exists()}")
 
                 if (!File(loaderPath).exists()) {
                     logAndNotify("ERROR: libld.so loader not found at $loaderPath")
@@ -168,6 +174,11 @@ class JellyfinService : Service() {
                     isRunning = false
                     return@Thread
                 }
+                if (!hostpolicyPath.exists()) {
+                    logAndNotify("ERROR: .NET 9 ARM64 hostpolicy is missing.\nExpected libhostpolicy.so at: ${hostpolicyPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
 
                 // Log launch parameters
                 logAndNotify("Jellyfin root: ${jellyfinHome.absolutePath}")
@@ -175,6 +186,7 @@ class JellyfinService : Service() {
                 logAndNotify(".NET root: ${dotnetRoot.absolutePath}")
                 logAndNotify(".NET runtime version: 9.0.16")
                 logAndNotify("hostfxr path: ${hostfxrPath.absolutePath}")
+                logAndNotify("hostpolicy path: ${hostpolicyPath.absolutePath}")
                 logAndNotify("Native library path: $nativeLibDir")
                 logAndNotify("Working directory: ${jellyfinHome.absolutePath}")
                 logAndNotify("Architecture: arm64-v8a")
