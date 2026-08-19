@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Play button triangle (server icon) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,30 L80,54 L40,78 Z"/>
+    <!-- Small cherry dots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,22 Q32,18 36,22 Q32,26 28,22 Z"/>
+</vector>
