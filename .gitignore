@@ -1,0 +1,14 @@
+# Gradle files
+.gradle/
+build/
+app/build/
+
+# Local configuration
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# Large built assets (already bundled/generated from local files)
+app/src/main/assets/jellyfin_assets.zip
+app/src/main/jniLibs/arm64-v8a/
