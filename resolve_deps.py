@@ -148,7 +148,17 @@ for filepath, dest_name in copied_paths.items():
                     filepath
                 ])
 
-# Step 4: Patch apphost dll path in libjellyfin.so
+# Step 4: Patch loader soname to prevent dynamic loader duplication and crashes
+loader_path = os.path.join(DEST_DIR, "libld.so")
+if os.path.exists(loader_path):
+    print(f"Patching loader SONAME in {loader_path}...")
+    subprocess.run([
+        "patchelf",
+        "--set-soname", "libld.so",
+        loader_path
+    ])
+
+# Step 5: Patch apphost dll path in libjellyfin.so
 libjellyfin_path = os.path.join(DEST_DIR, "libjellyfin.so")
 if os.path.exists(libjellyfin_path):
     print(f"Patching apphost DLL path in {libjellyfin_path}...")
