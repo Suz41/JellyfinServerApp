@@ -101,18 +101,6 @@ class JellyfinService : Service() {
                     }
                 }
 
-                // Always ensure ffmpeg and ffprobe are executable
-                val ffmpegFile = File(jellyfinHome, "ffmpeg")
-                val ffprobeFile = File(jellyfinHome, "ffprobe")
-                if (ffmpegFile.exists()) {
-                    val ok = ffmpegFile.setExecutable(true, false)
-                    logAndNotify("Setting ffmpeg executable permission: $ok")
-                }
-                if (ffprobeFile.exists()) {
-                    val ok = ffprobeFile.setExecutable(true, false)
-                    logAndNotify("Setting ffprobe executable permission: $ok")
-                }
-
                 val nativeLibDir = applicationInfo.nativeLibraryDir
                 val dotnetRoot = File(filesDir, "dotnet")
                 val fxrDir = File(dotnetRoot, "host/fxr/9.0.16")
@@ -125,11 +113,11 @@ class JellyfinService : Service() {
                     fxrDir.mkdirs()
                     sharedDir.mkdirs()
 
-                    // Clean up old .so symlinks in jellyfinHome first (since native library dir path changes on upgrades)
+                    // Clean up old .so symlinks and binaries in jellyfinHome first (since native library dir path changes on upgrades)
                     val jellyfinHomeFiles = jellyfinHome.listFiles()
                     if (jellyfinHomeFiles != null) {
                         for (file in jellyfinHomeFiles) {
-                            if (file.name.endsWith(".so") || file.name.contains(".so.")) {
+                            if (file.name.endsWith(".so") || file.name.contains(".so.") || file.name == "ffmpeg" || file.name == "ffprobe") {
                                 file.delete()
                             }
                         }
@@ -163,6 +151,16 @@ class JellyfinService : Service() {
                                     Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.1.1").absolutePath)
                                     Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.3").absolutePath)
                                     Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.1.1").absolutePath)
+                                } else if (lib.name == "libffmpeg.so") {
+                                    // Symlink target executable in read-only /data/app/.../lib/arm64 to bypass Android W^X restriction
+                                    val symlinkExec = File(jellyfinHome, "ffmpeg")
+                                    Os.symlink(lib.absolutePath, symlinkExec.absolutePath)
+                                    logAndNotify("Created symlink: ffmpeg -> ${lib.absolutePath}")
+                                } else if (lib.name == "libffprobe.so") {
+                                    // Symlink target executable in read-only /data/app/.../lib/arm64 to bypass Android W^X restriction
+                                    val symlinkExec = File(jellyfinHome, "ffprobe")
+                                    Os.symlink(lib.absolutePath, symlinkExec.absolutePath)
+                                    logAndNotify("Created symlink: ffprobe -> ${lib.absolutePath}")
                                 }
 
                                 // Symlink all libraries to shared framework directory (for fallback framework-dependent layout)
