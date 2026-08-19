@@ -284,7 +284,7 @@ class JellyfinService : Service() {
 
                 val env = processBuilder.environment()
                 env.remove("LD_PRELOAD")
-                env["LD_LIBRARY_PATH"] = nativeLibDir
+                env["LD_LIBRARY_PATH"] = "${jellyfinHome.absolutePath}:$nativeLibDir"
                 env["DOTNET_ROOT"] = dotnetRoot.absolutePath
                 env["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "1"
                 env["DOTNET_gcServer"] = "0"
