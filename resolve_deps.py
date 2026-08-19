@@ -8,8 +8,15 @@ JELLYFIN_DIR = "/data/data/com.termux/files/home/jellyfin"
 DEST_DIR = "/data/data/com.termux/files/home/JellyfinServerApp/app/src/main/jniLibs/arm64-v8a"
 
 if os.path.exists(DEST_DIR):
-    shutil.rmtree(DEST_DIR)
-os.makedirs(DEST_DIR, exist_ok=True)
+    for f in os.listdir(DEST_DIR):
+        if f != "libffmpeg.so" and f != "libffprobe.so":
+            filepath = os.path.join(DEST_DIR, f)
+            if os.path.isdir(filepath):
+                shutil.rmtree(filepath)
+            else:
+                os.remove(filepath)
+else:
+    os.makedirs(DEST_DIR, exist_ok=True)
 
 # Map original lib names to safe Android names (must match ^lib.*\.so$)
 name_mapping = {}
