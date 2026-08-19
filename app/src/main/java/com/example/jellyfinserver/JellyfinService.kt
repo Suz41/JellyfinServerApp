@@ -146,6 +146,9 @@ class JellyfinService : Service() {
                 val jellyfinDll = File(jellyfinHome, "jellyfin.dll")
                 val hostfxrPath = File(fxrDir, "libhostfxr.so")
                 val hostpolicyPath = File(dotnetRoot, "libhostpolicy.so")
+                val coreclrPath = File(dotnetRoot, "libcoreclr.so")
+                val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
+                val depsPath = File(jellyfinHome, "jellyfin.deps.json")
 
                 logAndNotify("Verifying required files before launch:")
                 logAndNotify("  Loader exists: ${File(loaderPath).exists()}")
@@ -153,6 +156,9 @@ class JellyfinService : Service() {
                 logAndNotify("  Jellyfin DLL exists: ${jellyfinDll.exists()}")
                 logAndNotify("  hostfxr exists: ${hostfxrPath.exists()}")
                 logAndNotify("  hostpolicy exists: ${hostpolicyPath.exists()}")
+                logAndNotify("  coreclr exists: ${coreclrPath.exists()}")
+                logAndNotify("  runtimeconfig exists: ${runtimeconfigPath.exists()}")
+                logAndNotify("  deps exists: ${depsPath.exists()}")
 
                 if (!File(loaderPath).exists()) {
                     logAndNotify("ERROR: libld.so loader not found at $loaderPath")
@@ -179,17 +185,34 @@ class JellyfinService : Service() {
                     isRunning = false
                     return@Thread
                 }
+                if (!coreclrPath.exists()) {
+                    logAndNotify("ERROR: .NET 9 ARM64 coreclr is missing.\nExpected libcoreclr.so at: ${coreclrPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
+                if (!runtimeconfigPath.exists()) {
+                    logAndNotify("ERROR: runtimeconfig.json is missing at: ${runtimeconfigPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
+                if (!depsPath.exists()) {
+                    logAndNotify("ERROR: deps.json is missing at: ${depsPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
 
                 // Log launch parameters
                 logAndNotify("Jellyfin root: ${jellyfinHome.absolutePath}")
                 logAndNotify("Jellyfin DLL: ${jellyfinDll.absolutePath}")
+                logAndNotify("runtimeconfig.json: ${runtimeconfigPath.absolutePath}")
+                logAndNotify("deps.json: ${depsPath.absolutePath}")
                 logAndNotify(".NET root: ${dotnetRoot.absolutePath}")
-                logAndNotify(".NET runtime version: 9.0.16")
-                logAndNotify("hostfxr path: ${hostfxrPath.absolutePath}")
-                logAndNotify("hostpolicy path: ${hostpolicyPath.absolutePath}")
-                logAndNotify("Native library path: $nativeLibDir")
-                logAndNotify("Working directory: ${jellyfinHome.absolutePath}")
-                logAndNotify("Architecture: arm64-v8a")
+                logAndNotify("hostfxr: ${hostfxrPath.absolutePath}")
+                logAndNotify("hostpolicy: ${hostpolicyPath.absolutePath}")
+                logAndNotify("coreclr: ${coreclrPath.absolutePath}")
+                logAndNotify("runtime version: 9.0.16")
+                logAndNotify("target RID: linux-arm64")
+                logAndNotify("deployment model: self-contained")
 
                 logAndNotify("Starting Jellyfin process...")
 
@@ -198,6 +221,9 @@ class JellyfinService : Service() {
                 val cacheDir  = File(jellyfinHome, "cache").also { it.mkdirs() }
                 val logDir    = File(jellyfinHome, "log").also { it.mkdirs() }
                 val webDir    = File(jellyfinHome, "jellyfin-web")
+
+                // Auto-configure IP binding and remote access
+                configureNetworkSettings(configDir)
 
                 val processBuilder = ProcessBuilder(
                     loaderPath,
@@ -292,6 +318,42 @@ class JellyfinService : Service() {
     override fun onDestroy() {
         stopServer()
         super.onDestroy()
+    }
+
+    private fun configureNetworkSettings(configDir: File) {
+        val networkXml = File(configDir, "network.xml")
+        val defaultXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <NetworkConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <RequireHttps>false</RequireHttps>
+              <CertificatePath />
+              <CertificatePassword />
+              <EnableHttps>false</EnableHttps>
+              <PublicHttpsPort>8920</PublicHttpsPort>
+              <HttpServerPortNumber>8096</HttpServerPortNumber>
+              <HttpsPortNumber>8920</HttpsPortNumber>
+              <EnableHttp2>true</EnableHttp2>
+              <EnableHttp3>false</EnableHttp3>
+              <EnableRemoteAccess>true</EnableRemoteAccess>
+              <BindInterfaceAddress />
+            </NetworkConfiguration>
+        """.trimIndent()
+
+        try {
+            if (!networkXml.exists()) {
+                networkXml.writeText(defaultXml)
+                logAndNotify("Created default network.xml with remote access enabled.")
+            } else {
+                var content = networkXml.readText()
+                if (content.contains("<EnableRemoteAccess>false</EnableRemoteAccess>")) {
+                    content = content.replace("<EnableRemoteAccess>false</EnableRemoteAccess>", "<EnableRemoteAccess>true</EnableRemoteAccess>")
+                    networkXml.writeText(content)
+                    logAndNotify("Auto-configured network.xml: enabled remote access.")
+                }
+            }
+        } catch (e: Exception) {
+            logAndNotify("WARNING: Failed to auto-configure network.xml: ${e.message}")
+        }
     }
 
     private fun createNotificationChannel() {

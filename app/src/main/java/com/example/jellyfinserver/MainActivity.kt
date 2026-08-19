@@ -29,6 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import java.net.NetworkInterface
+import java.net.Inet4Address
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +39,7 @@ class MainActivity : ComponentActivity() {
 
     private val logLines = mutableStateListOf<String>()
     private var serverRunning by mutableStateOf(false)
+    private val ipAddresses = mutableStateListOf<String>()
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(className: ComponentName, service: IBinder) {
@@ -44,6 +47,10 @@ class MainActivity : ComponentActivity() {
             jellyfinService = binder.getService()
             isBound = true
             serverRunning = jellyfinService?.isRunning == true
+            if (serverRunning) {
+                ipAddresses.clear()
+                ipAddresses.addAll(getLocalIpAddresses())
+            }
             val existing = jellyfinService?.getLogs() ?: ""
             if (existing.isNotBlank()) {
                 logLines.clear()
@@ -51,7 +58,14 @@ class MainActivity : ComponentActivity() {
             }
             jellyfinService?.setLogListener { line ->
                 if (line.isNotEmpty()) logLines.add(line)
-                serverRunning = jellyfinService?.isRunning == true
+                val running = jellyfinService?.isRunning == true
+                if (running != serverRunning) {
+                    serverRunning = running
+                    if (running) {
+                        ipAddresses.clear()
+                        ipAddresses.addAll(getLocalIpAddresses())
+                    }
+                }
             }
         }
 
@@ -66,6 +80,27 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { startJellyfinService() }
 
+    private fun getLocalIpAddresses(): List<String> {
+        val list = mutableListOf<String>()
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            while (interfaces != null && interfaces.hasMoreElements()) {
+                val element = interfaces.nextElement()
+                if (element.isLoopback || !element.isUp) continue
+                val addresses = element.inetAddresses
+                while (addresses.hasMoreElements()) {
+                    val addr = addresses.nextElement()
+                    if (addr is Inet4Address) {
+                        addr.hostAddress?.let { list.add(it) }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return list
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -78,6 +113,7 @@ class MainActivity : ComponentActivity() {
                     ServerControlScreen(
                         serverRunning = serverRunning,
                         logs = logLines,
+                        ipAddresses = ipAddresses,
                         onToggleServer = {
                             if (serverRunning) stopJellyfinService()
                             else checkAndStartService()
@@ -139,6 +175,7 @@ class MainActivity : ComponentActivity() {
 fun ServerControlScreen(
     serverRunning: Boolean,
     logs: List<String>,
+    ipAddresses: List<String>,
     onToggleServer: () -> Unit,
     onOpenWebUi: () -> Unit
 ) {
@@ -165,7 +202,7 @@ fun ServerControlScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 4.dp),
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
         ) {
@@ -185,10 +222,48 @@ fun ServerControlScreen(
             }
         }
 
+        if (serverRunning && ipAddresses.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Access Server At:",
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFDE3163),
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    Text(
+                        text = "Local: http://127.0.0.1:8096",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(bottom = 2.dp)
+                    )
+                    ipAddresses.forEach { ip ->
+                        Text(
+                            text = "Network: http://$ip:8096",
+                            color = Color.LightGray,
+                            fontSize = 13.sp,
+                            fontFamily = FontFamily.Monospace,
+                            modifier = Modifier.padding(bottom = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Button(
