@@ -123,6 +123,17 @@ loader_src = os.path.join(GLIBC_LIB_DIR, "ld-linux-aarch64.so.1")
 if os.path.exists(loader_src):
     files_to_copy[loader_src] = "libld.so"
 
+# Copy OpenSSL libraries (dynamic prober uses these)
+libssl_src = os.path.join(GLIBC_LIB_DIR, "libssl.so.3")
+if os.path.exists(libssl_src):
+    files_to_copy[libssl_src] = "libssl.so"
+    name_mapping["libssl.so.3"] = "libssl.so"
+
+libcrypto_src = os.path.join(GLIBC_LIB_DIR, "libcrypto.so.3")
+if os.path.exists(libcrypto_src):
+    files_to_copy[libcrypto_src] = "libcrypto.so"
+    name_mapping["libcrypto.so.3"] = "libcrypto.so"
+
 print(f"Total libraries/binaries discovered: {len(files_to_copy)}")
 
 # Step 2: Copy files to DEST_DIR
@@ -148,7 +159,7 @@ for filepath, dest_name in copied_paths.items():
                     filepath
                 ])
 
-# Step 4: Patch loader soname to prevent dynamic loader duplication and crashes
+# Step 4: Patch loader and OpenSSL sonames to prevent dynamic loader/library duplication and crashes
 loader_path = os.path.join(DEST_DIR, "libld.so")
 if os.path.exists(loader_path):
     print(f"Patching loader SONAME in {loader_path}...")
@@ -156,6 +167,24 @@ if os.path.exists(loader_path):
         "patchelf",
         "--set-soname", "libld.so",
         loader_path
+    ])
+
+ssl_path = os.path.join(DEST_DIR, "libssl.so")
+if os.path.exists(ssl_path):
+    print(f"Patching libssl SONAME in {ssl_path}...")
+    subprocess.run([
+        "patchelf",
+        "--set-soname", "libssl.so",
+        ssl_path
+    ])
+
+crypto_path = os.path.join(DEST_DIR, "libcrypto.so")
+if os.path.exists(crypto_path):
+    print(f"Patching libcrypto SONAME in {crypto_path}...")
+    subprocess.run([
+        "patchelf",
+        "--set-soname", "libcrypto.so",
+        crypto_path
     ])
 
 # Step 5: Patch apphost dll path in libjellyfin.so

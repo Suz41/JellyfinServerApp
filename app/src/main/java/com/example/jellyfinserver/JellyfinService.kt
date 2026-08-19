@@ -161,6 +161,8 @@ class JellyfinService : Service() {
                 val hostfxrPath = File(fxrDir, "libhostfxr.so")
                 val hostpolicyPath = File(jellyfinHome, "libhostpolicy.so")
                 val coreclrPath = File(jellyfinHome, "libcoreclr.so")
+                val sslPath = File(jellyfinHome, "libssl.so")
+                val cryptoPath = File(jellyfinHome, "libcrypto.so")
                 val runtimeconfigPath = File(jellyfinHome, "jellyfin.runtimeconfig.json")
                 val depsPath = File(jellyfinHome, "jellyfin.deps.json")
 
@@ -171,6 +173,8 @@ class JellyfinService : Service() {
                 logAndNotify("  hostfxr exists: ${hostfxrPath.exists()}")
                 logAndNotify("  hostpolicy exists: ${hostpolicyPath.exists()}")
                 logAndNotify("  coreclr exists: ${coreclrPath.exists()}")
+                logAndNotify("  libssl exists: ${sslPath.exists()}")
+                logAndNotify("  libcrypto exists: ${cryptoPath.exists()}")
                 logAndNotify("  runtimeconfig exists: ${runtimeconfigPath.exists()}")
                 logAndNotify("  deps exists: ${depsPath.exists()}")
 
@@ -204,6 +208,16 @@ class JellyfinService : Service() {
                     isRunning = false
                     return@Thread
                 }
+                if (!sslPath.exists()) {
+                    logAndNotify("ERROR: OpenSSL libssl.so is missing at: ${sslPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
+                if (!cryptoPath.exists()) {
+                    logAndNotify("ERROR: OpenSSL libcrypto.so is missing at: ${cryptoPath.absolutePath}")
+                    isRunning = false
+                    return@Thread
+                }
                 if (!runtimeconfigPath.exists()) {
                     logAndNotify("ERROR: runtimeconfig.json is missing at: ${runtimeconfigPath.absolutePath}")
                     isRunning = false
@@ -224,6 +238,8 @@ class JellyfinService : Service() {
                 logAndNotify("hostfxr: ${hostfxrPath.absolutePath}")
                 logAndNotify("hostpolicy: ${hostpolicyPath.absolutePath}")
                 logAndNotify("coreclr: ${coreclrPath.absolutePath}")
+                logAndNotify("libssl: ${sslPath.absolutePath}")
+                logAndNotify("libcrypto: ${cryptoPath.absolutePath}")
                 logAndNotify("runtime version: 9.0.16")
                 logAndNotify("target RID: linux-arm64")
                 logAndNotify("deployment model: self-contained")
