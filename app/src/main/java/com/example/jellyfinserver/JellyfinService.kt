@@ -136,6 +136,7 @@ class JellyfinService : Service() {
                 env["DOTNET_gcServer"] = "0"
                 env["DOTNET_System_GC_Server"] = "false"
                 env["DOTNET_GCHeapHardLimit"] = "200000000"
+                env["COREHOST_TRACE"] = "1"
                 processBuilder.redirectErrorStream(true)
 
                 val process = processBuilder.start()
