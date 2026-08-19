@@ -130,4 +130,20 @@ for filepath, dest_name in copied_paths.items():
                     filepath
                 ])
 
+# Step 4: Patch apphost dll path in libjellyfin.so
+libjellyfin_path = os.path.join(DEST_DIR, "libjellyfin.so")
+if os.path.exists(libjellyfin_path):
+    print(f"Patching apphost DLL path in {libjellyfin_path}...")
+    with open(libjellyfin_path, "r+b") as f:
+        data = f.read()
+        idx = data.find(b"jellyfin.dll\x00")
+        if idx != -1:
+            # We use relative path going 6 levels up from lib/arm64 to / and then to writable data dir
+            new_path = b"../../../../../../data/data/com.example.jellyfinserver/files/jellyfin/jellyfin.dll\x00"
+            f.seek(idx)
+            f.write(new_path)
+            print(f"Successfully patched apphost DLL path to relative path at offset {idx}!")
+        else:
+            print("WARNING: b\"jellyfin.dll\\x00\" not found in libjellyfin.so!")
+
 print("Dependency resolving and patching complete!")
