@@ -117,7 +117,7 @@ class JellyfinService : Service() {
                     val jellyfinHomeFiles = jellyfinHome.listFiles()
                     if (jellyfinHomeFiles != null) {
                         for (file in jellyfinHomeFiles) {
-                            if (file.name.endsWith(".so")) {
+                            if (file.name.endsWith(".so") || file.name.contains(".so.")) {
                                 file.delete()
                             }
                         }
@@ -139,6 +139,19 @@ class JellyfinService : Service() {
                                 // Symlink all libraries directly to the dotnet root (for fallback self-contained layout)
                                 val symlinkRootFile = File(dotnetRoot, lib.name)
                                 Os.symlink(lib.absolutePath, symlinkRootFile.absolutePath)
+
+                                // If this is libssl or libcrypto, create versioned symlinks that .NET dynamic prober expects
+                                if (lib.name == "libssl.so") {
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.3").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libssl.so.1.1").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(dotnetRoot, "libssl.so.3").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(dotnetRoot, "libssl.so.1.1").absolutePath)
+                                } else if (lib.name == "libcrypto.so") {
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.3").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(jellyfinHome, "libcrypto.so.1.1").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.3").absolutePath)
+                                    Os.symlink(lib.absolutePath, File(dotnetRoot, "libcrypto.so.1.1").absolutePath)
+                                }
 
                                 // Symlink all libraries to shared framework directory (for fallback framework-dependent layout)
                                 val symlinkFile = File(sharedDir, lib.name)
