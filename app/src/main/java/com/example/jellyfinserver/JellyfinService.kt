@@ -271,11 +271,6 @@ class JellyfinService : Service() {
                 logAndNotify("target RID: linux-arm64")
                 logAndNotify("deployment model: self-contained")
 
-                // Run diagnostic check on ffmpeg to log any startup library/SELinux/SECCOMP issues
-                diagnoseFFmpeg(ffmpegPath.absolutePath)
-
-                logAndNotify("Starting Jellyfin process...")
-
                 val dataDir   = File(jellyfinHome, "data").also { it.mkdirs() }
                 val configDir = File(jellyfinHome, "config").also { it.mkdirs() }
                 val cacheDir  = File(jellyfinHome, "cache").also { it.mkdirs() }
@@ -284,6 +279,16 @@ class JellyfinService : Service() {
 
                 // Auto-configure IP binding and remote access
                 configureNetworkSettings(configDir)
+
+                // Auto-configure encoding.xml with absolute FFmpeg/FFprobe paths
+                configureEncodingSettings(configDir, ffmpegPath, ffprobePath)
+
+                // Verify and diagnose FFmpeg and FFprobe before launching Jellyfin
+                if (!verifyAndDiagnoseFFmpeg(ffmpegPath) || !verifyAndDiagnoseFFmpeg(ffprobePath)) {
+                    logAndNotify("ERROR: FFmpeg or FFprobe diagnostics failed! Aborting server start.")
+                    isRunning = false
+                    return@Thread
+                }
 
                 val processBuilder = ProcessBuilder(
                     loaderPath,
@@ -421,25 +426,136 @@ class JellyfinService : Service() {
         }
     }
 
-    private fun diagnoseFFmpeg(ffmpegPath: String) {
-        logAndNotify("Diagnosing ffmpeg launch at $ffmpegPath...")
+    private fun isArm64Elf(file: File): Boolean {
         try {
-            val process = ProcessBuilder(ffmpegPath, "-version")
+            java.io.FileInputStream(file).use { fis ->
+                val header = ByteArray(64)
+                if (fis.read(header) == 64) {
+                    if (header[0] == 0x7F.toByte() && header[1] == 'E'.toByte() && header[2] == 'L'.toByte() && header[3] == 'F'.toByte()) {
+                        val is64Bit = header[4] == 2.toByte()
+                        val machine = ((header[19].toInt() and 0xFF) shl 8) or (header[18].toInt() and 0xFF)
+                        return is64Bit && machine == 183
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+        return false
+    }
+
+    private fun verifyAndDiagnoseFFmpeg(ffmpegFile: File): Boolean {
+        logAndNotify("--- FFmpeg Diagnostics ---")
+        logAndNotify("FFmpeg path: ${ffmpegFile.absolutePath}")
+        
+        val exists = ffmpegFile.exists()
+        logAndNotify("FFmpeg exists: $exists")
+        if (!exists) {
+            logAndNotify("FFmpeg test: FAILED (file not found)")
+            return false
+        }
+
+        val targetFile = try {
+            val path = java.nio.file.Paths.get(ffmpegFile.absolutePath)
+            if (java.nio.file.Files.isSymbolicLink(path)) {
+                val targetPath = java.nio.file.Files.readSymbolicLink(path)
+                if (targetPath.isAbsolute) targetPath.toFile() else File(ffmpegFile.parentFile, targetPath.toString())
+            } else {
+                ffmpegFile
+            }
+        } catch (e: Exception) {
+            ffmpegFile
+        }
+        logAndNotify("FFmpeg target path: ${targetFile.absolutePath}")
+
+        val isExecutable = ffmpegFile.canExecute()
+        logAndNotify("FFmpeg executable: $isExecutable")
+
+        val isArm64 = isArm64Elf(targetFile)
+        logAndNotify("FFmpeg architecture: ${if (isArm64) "ARM64" else "UNKNOWN (Not ARM64 ELF)"}")
+
+        var versionFound = ""
+        val errorOutput = StringBuilder()
+        var success = false
+
+        try {
+            val process = ProcessBuilder(ffmpegFile.absolutePath, "-version")
                 .redirectErrorStream(true)
                 .start()
             val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
             var line: String?
             var lineCount = 0
             while (reader.readLine().also { line = it } != null) {
-                if (lineCount < 20) { // Limit output lines to avoid clobbering UI logs
+                if (lineCount < 10) {
                     logAndNotify("  [ffmpeg] $line")
+                    if (line!!.contains("ffmpeg version") || line!!.contains("ffprobe version")) {
+                        versionFound = line!!
+                    }
                 }
+                errorOutput.append(line).append("\n")
                 lineCount++
             }
             val exitCode = process.waitFor()
-            logAndNotify("ffmpeg exit code: $exitCode")
+            logAndNotify("FFmpeg process exit code: $exitCode")
+            
+            if (exitCode == 0 && versionFound.isNotEmpty()) {
+                success = true
+            }
         } catch (e: Exception) {
-            logAndNotify("ffmpeg execution failed: ${e.message}")
+            logAndNotify("FFmpeg process execution failed: ${e.message}")
+            errorOutput.append(e.message).append("\n")
+        }
+
+        if (success) {
+            logAndNotify("FFmpeg test: SUCCESS")
+            return true
+        } else {
+            logAndNotify("FFmpeg test: FAILED")
+            logAndNotify("Loader/System Error Output:\n$errorOutput")
+            return false
+        }
+    }
+
+    private fun configureEncodingSettings(configDir: File, ffmpegPath: File, ffprobePath: File) {
+        val encodingXml = File(configDir, "encoding.xml")
+        val defaultXml = """
+            <?xml version="1.0" encoding="utf-8"?>
+            <EncodingOptions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+              <EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>
+              <EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>
+            </EncodingOptions>
+        """.trimIndent()
+
+        try {
+            if (!encodingXml.exists()) {
+                encodingXml.writeText(defaultXml)
+                logAndNotify("Created default encoding.xml with FFmpeg path configured.")
+            } else {
+                var content = encodingXml.readText()
+                
+                // Replace or insert EncoderAppPath
+                content = if (content.contains("<EncoderAppPath>")) {
+                    content.replace(Regex("<EncoderAppPath>.*?</EncoderAppPath>"), "<EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>")
+                } else if (content.contains("<EncoderAppPath")) {
+                    content.replace(Regex("<EncoderAppPath\\s*/>"), "<EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>")
+                } else {
+                    content.replace("</EncodingOptions>", "  <EncoderAppPath>${ffmpegPath.absolutePath}</EncoderAppPath>\n</EncodingOptions>")
+                }
+
+                // Replace or insert EncoderAppPathDisplay
+                content = if (content.contains("<EncoderAppPathDisplay>")) {
+                    content.replace(Regex("<EncoderAppPathDisplay>.*?</EncoderAppPathDisplay>"), "<EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>")
+                } else if (content.contains("<EncoderAppPathDisplay")) {
+                    content.replace(Regex("<EncoderAppPathDisplay\\s*/>"), "<EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>")
+                } else {
+                    content.replace("</EncodingOptions>", "  <EncoderAppPathDisplay>${ffmpegPath.absolutePath}</EncoderAppPathDisplay>\n</EncodingOptions>")
+                }
+
+                encodingXml.writeText(content)
+                logAndNotify("Auto-configured encoding.xml with correct FFmpeg path.")
+            }
+        } catch (e: Exception) {
+            logAndNotify("WARNING: Failed to auto-configure encoding.xml: ${e.message}")
         }
     }
 
