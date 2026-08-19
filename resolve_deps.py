@@ -7,6 +7,8 @@ GLIBC_LIB_DIR = "/data/data/com.termux/files/usr/glibc/lib"
 JELLYFIN_DIR = "/data/data/com.termux/files/home/jellyfin"
 DEST_DIR = "/data/data/com.termux/files/home/JellyfinServerApp/app/src/main/jniLibs/arm64-v8a"
 
+if os.path.exists(DEST_DIR):
+    shutil.rmtree(DEST_DIR)
 os.makedirs(DEST_DIR, exist_ok=True)
 
 # Map original lib names to safe Android names (must match ^lib.*\.so$)
@@ -33,6 +35,22 @@ def get_android_safe_name(name):
 
 # Add explicit mapping for the loader
 name_mapping["ld-linux-aarch64.so.1"] = "libld.so"
+
+# Map core glibc runtime libraries to libg_*.so to avoid Android installer filtering and Bionic clashes
+name_mapping["libc.so.6"] = "libg_libc.so"
+name_mapping["libc.so"] = "libg_libc.so"
+
+name_mapping["libdl.so.2"] = "libg_dl.so"
+name_mapping["libdl.so"] = "libg_dl.so"
+
+name_mapping["libm.so.6"] = "libg_m.so"
+name_mapping["libm.so"] = "libg_m.so"
+
+name_mapping["libpthread.so.0"] = "libg_pthread.so"
+name_mapping["libpthread.so"] = "libg_pthread.so"
+
+name_mapping["librt.so.1"] = "libg_rt.so"
+name_mapping["librt.so"] = "libg_rt.so"
 
 def get_dependencies(filepath):
     try:
