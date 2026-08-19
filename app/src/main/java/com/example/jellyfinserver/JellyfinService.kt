@@ -512,7 +512,24 @@ class JellyfinService : Service() {
         } else {
             logAndNotify("FFmpeg test: FAILED")
             logAndNotify("Loader/System Error Output:\n$errorOutput")
+            captureLogcat()
             return false
+        }
+    }
+
+    private fun captureLogcat() {
+        logAndNotify("Capturing system logcat for diagnostic details...")
+        try {
+            val process = ProcessBuilder("logcat", "-d", "-t", "50")
+                .start()
+            val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                logAndNotify("  [logcat] $line")
+            }
+            process.waitFor()
+        } catch (e: Exception) {
+            logAndNotify("Failed to capture logcat: ${e.message}")
         }
     }
 

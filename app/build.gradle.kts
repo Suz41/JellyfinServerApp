@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.jellyfinserver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 22
-        versionName = "1.22"
+        versionCode = 23
+        versionName = "1.23"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
