@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.jellyfinserver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 28
-        versionName = "1.28"
+        versionCode = 31
+        versionName = "1.31"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -47,6 +47,7 @@ android {
         kotlinCompilerExtensionVersion = "1.5.8"
     }
     packaging {
+        doNotStrip("**/*.so")
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }

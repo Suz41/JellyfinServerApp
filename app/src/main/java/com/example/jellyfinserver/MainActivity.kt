@@ -29,6 +29,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import com.example.jellyfinserver.core.ServerState
 import java.net.NetworkInterface
 import java.net.Inet4Address
 
@@ -38,7 +43,7 @@ class MainActivity : ComponentActivity() {
     private var isBound = false
 
     private val logLines = mutableStateListOf<String>()
-    private var serverRunning by mutableStateOf(false)
+    private var serverState by mutableStateOf(ServerState.STOPPED)
     private val ipAddresses = mutableStateListOf<String>()
 
     private val connection = object : ServiceConnection {
@@ -46,22 +51,29 @@ class MainActivity : ComponentActivity() {
             val binder = service as JellyfinService.LocalBinder
             jellyfinService = binder.getService()
             isBound = true
-            serverRunning = jellyfinService?.isRunning == true
-            if (serverRunning) {
-                ipAddresses.clear()
-                ipAddresses.addAll(getLocalIpAddresses())
+            
+            jellyfinService?.setStateListener { newState ->
+                serverState = newState
+                if (newState == ServerState.RUNNING) {
+                    ipAddresses.clear()
+                    ipAddresses.addAll(getLocalIpAddresses())
+                }
             }
+
             val existing = jellyfinService?.getLogs() ?: ""
             if (existing.isNotBlank()) {
                 logLines.clear()
                 existing.split("\n").filter { it.isNotEmpty() }.forEach { logLines.add(it) }
             }
+
             jellyfinService?.setLogListener { line ->
-                if (line.isNotEmpty()) logLines.add(line)
-                val running = jellyfinService?.isRunning == true
-                if (running != serverRunning) {
-                    serverRunning = running
-                    if (running) {
+                if (line.isNotEmpty()) {
+                    logLines.add(line)
+                }
+                val newState = jellyfinService?.state ?: ServerState.STOPPED
+                if (newState != serverState) {
+                    serverState = newState
+                    if (newState == ServerState.RUNNING) {
                         ipAddresses.clear()
                         ipAddresses.addAll(getLocalIpAddresses())
                     }
@@ -72,7 +84,7 @@ class MainActivity : ComponentActivity() {
         override fun onServiceDisconnected(arg0: ComponentName) {
             jellyfinService = null
             isBound = false
-            serverRunning = false
+            serverState = ServerState.STOPPED
         }
     }
 
@@ -111,11 +123,16 @@ class MainActivity : ComponentActivity() {
                     color = Color(0xFF121212)
                 ) {
                     ServerControlScreen(
-                        serverRunning = serverRunning,
+                        serverState = serverState,
                         logs = logLines,
                         ipAddresses = ipAddresses,
                         onToggleServer = {
-                            if (serverRunning) stopJellyfinService()
+                            val active = (serverState != ServerState.STOPPED &&
+                                    serverState != ServerState.START_FAILED &&
+                                    serverState != ServerState.PROCESS_EXITED &&
+                                    serverState != ServerState.TCP_BIND_FAILED &&
+                                    serverState != ServerState.HTTP_NOT_READY)
+                            if (active) stopJellyfinService()
                             else checkAndStartService()
                         },
                         onOpenWebUi = {
@@ -153,7 +170,7 @@ class MainActivity : ComponentActivity() {
     private fun stopJellyfinService() {
         val intent = Intent(this, JellyfinService::class.java).apply { action = "STOP" }
         startService(intent)
-        serverRunning = false
+        serverState = ServerState.STOPPED
         if (isBound) {
             jellyfinService?.setLogListener(null)
             unbindService(connection)
@@ -173,7 +190,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ServerControlScreen(
-    serverRunning: Boolean,
+    serverState: ServerState,
     logs: List<String>,
     ipAddresses: List<String>,
     onToggleServer: () -> Unit,
@@ -183,6 +200,71 @@ fun ServerControlScreen(
     LaunchedEffect(logs.size) {
         if (logs.isNotEmpty()) listState.animateScrollToItem(logs.size - 1)
     }
+
+    val statusText = when (serverState) {
+        ServerState.STOPPED -> "STOPPED 🔴"
+        ServerState.STARTING,
+        ServerState.PROCESS_STARTED,
+        ServerState.RUNTIME_INITIALIZED,
+        ServerState.JELLYFIN_INITIALIZING,
+        ServerState.HTTP_WAITING,
+        ServerState.TCP_CHECK,
+        ServerState.HTTP_CHECK -> "STARTING 🟡"
+        ServerState.WEB_STATIC_ONLY -> "WEB_STATIC_ONLY 🟡"
+        ServerState.API_NOT_READY -> "API_NOT_READY 🟡"
+        ServerState.RUNNING -> "RUNNING 🟢"
+        ServerState.STOPPING -> "STOPPING 🟠"
+        ServerState.START_FAILED,
+        ServerState.PROCESS_EXITED,
+        ServerState.TCP_BIND_FAILED,
+        ServerState.HTTP_NOT_READY -> "ERROR ⚠️"
+    }
+
+    val statusColor = when (serverState) {
+        ServerState.RUNNING -> Color.Green
+        ServerState.STOPPED -> Color.Red
+        ServerState.STARTING,
+        ServerState.PROCESS_STARTED,
+        ServerState.RUNTIME_INITIALIZED,
+        ServerState.JELLYFIN_INITIALIZING,
+        ServerState.HTTP_WAITING,
+        ServerState.TCP_CHECK,
+        ServerState.HTTP_CHECK -> Color.Yellow
+        ServerState.WEB_STATIC_ONLY -> Color.Yellow
+        ServerState.API_NOT_READY -> Color.Yellow
+        ServerState.STOPPING -> Color(0xFFFFA500)
+        ServerState.START_FAILED,
+        ServerState.PROCESS_EXITED,
+        ServerState.TCP_BIND_FAILED,
+        ServerState.HTTP_NOT_READY -> Color(0xFFFF4444)
+    }
+
+    val detailText = when (serverState) {
+        ServerState.STOPPED -> ""
+        ServerState.RUNNING -> ""
+        else -> " (${serverState.name})"
+    }
+
+    val buttonText = when (serverState) {
+        ServerState.STOPPING -> "Stopping..."
+        ServerState.STARTING,
+        ServerState.PROCESS_STARTED,
+        ServerState.RUNTIME_INITIALIZED,
+        ServerState.JELLYFIN_INITIALIZING,
+        ServerState.HTTP_WAITING,
+        ServerState.TCP_CHECK,
+        ServerState.HTTP_CHECK,
+        ServerState.WEB_STATIC_ONLY,
+        ServerState.API_NOT_READY -> "Starting..."
+        ServerState.RUNNING -> "Stop Server"
+        else -> "Start Server"
+    }
+
+    val canStart = (serverState == ServerState.STOPPED ||
+            serverState == ServerState.START_FAILED ||
+            serverState == ServerState.PROCESS_EXITED ||
+            serverState == ServerState.TCP_BIND_FAILED ||
+            serverState == ServerState.HTTP_NOT_READY)
 
     Column(
         modifier = Modifier
@@ -215,14 +297,14 @@ fun ServerControlScreen(
             ) {
                 Text("Status:", fontWeight = FontWeight.SemiBold, color = Color.White)
                 Text(
-                    text = if (serverRunning) "RUNNING 🟢" else "STOPPED 🔴",
-                    color = if (serverRunning) Color.Green else Color.Red,
+                    text = "$statusText$detailText",
+                    color = statusColor,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
 
-        if (serverRunning && ipAddresses.isNotEmpty()) {
+        if (serverState == ServerState.RUNNING && ipAddresses.isNotEmpty()) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -268,30 +350,55 @@ fun ServerControlScreen(
         ) {
             Button(
                 onClick = onToggleServer,
+                enabled = canStart || serverState == ServerState.RUNNING,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (serverRunning) Color(0xFFB71C1C) else Color(0xFFDE3163)
+                    containerColor = if (serverState == ServerState.RUNNING) Color(0xFFB71C1C) else Color(0xFFDE3163)
                 )
             ) {
-                Text(if (serverRunning) "Stop Server" else "Start Server")
+                Text(buttonText)
             }
             Button(
                 onClick = onOpenWebUi,
-                enabled = serverRunning,
+                enabled = serverState == ServerState.RUNNING,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333))
             ) {
                 Text("Open Web UI")
             }
         }
 
-        Text(
-            text = "Server Logs",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Gray,
+        val clipboardManager = LocalClipboardManager.current
+        val context = LocalContext.current
+
+        Row(
             modifier = Modifier
-                .align(Alignment.Start)
-                .padding(bottom = 4.dp)
-        )
+                .fillMaxWidth()
+                .padding(top = 8.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Server Logs",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Gray
+            )
+            OutlinedButton(
+                onClick = {
+                    val fullLogs = logs.joinToString("\n")
+                    if (fullLogs.isNotBlank()) {
+                        clipboardManager.setText(AnnotatedString(fullLogs))
+                        Toast.makeText(context, "Server logs copied to clipboard! 📋", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(context, "No logs to copy", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.height(32.dp),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+            ) {
+                Text("📋 Copy Logs", fontSize = 12.sp, color = Color.White)
+            }
+        }
 
         Box(
             modifier = Modifier
