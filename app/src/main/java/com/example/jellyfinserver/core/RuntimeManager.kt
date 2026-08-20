@@ -76,11 +76,16 @@ object RuntimeManager {
                 LogManager.log("  Result: REFUSED")
                 return
             } else if (isRegularFile) {
-                // CASE D: Real File -> Refuse deletion
-                LogManager.log("  Destination type: FILE")
-                LogManager.log("  Action: REFUSED (Real file exists at destination)")
-                LogManager.log("  Result: REFUSED")
-                return
+                // CASE D: Real File -> Replace with symlink
+                LogManager.log("  Destination type: FILE — Overwriting with symlink")
+                try {
+                    destFile.delete()
+                    Os.symlink(srcPath, destPath)
+                    LogManager.log("  Result: SUCCESS")
+                } catch (e: Exception) {
+                    LogManager.log("  Result: FAILED (${e.message})")
+                    throw e
+                }
             }
         }
 
